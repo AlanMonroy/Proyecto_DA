@@ -1,0 +1,22 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Mi primera página</title>
+
+    <link rel="stylesheet" href="{% static 'home/css/style.css' %}">
+</head>
+<body>
+    <!--Crear el fondo con efecto de la pagina-->
+    <div class="contenedor_fondo">
+        <div class="space space-1"></div>
+        <div class="space space-2"></div>
+        <div class="space space-3"></div>
+    </div>
+
+    <h1>Hola Django</h1>
+
+    <script src="{% static 'home/js/script.js' %}"></script>
+</body>
+</html>
