@@ -1,0 +1,33 @@
+{% load static %}
+{% load django_browser_reload %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <title>{% block title %}{% endblock %}</title>
+
+    <!-- CSS GLOBAL
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    -->
+
+    <!-- CSS POR PÁGINA -->
+    {% block styles %}
+    {% endblock %}
+</head>
+<body>
+
+    {% block content %}
+    {% endblock %}
+
+    <!-- JS GLOBAL
+    <script src="{% static 'js/global.js' %}"></script>-->
+
+    <!-- JS POR PÁGINA -->
+    {% block scripts %}
+    {% endblock %}
+
+    {% django_browser_reload_script %}
+</body>
+</html>

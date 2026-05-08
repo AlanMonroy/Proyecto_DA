@@ -21,3 +21,8 @@
   from{transform: translateY(0);}
   to{transform: translateY(-100vh);}
 }
+
+.text1{
+  color: white;
+  font-family: "Berlin Sans FB";
+}
