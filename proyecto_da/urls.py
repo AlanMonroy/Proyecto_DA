@@ -21,8 +21,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("__reload__/", include("django_browser_reload.urls")),
-    path('', include('home.urls')),
+    path('home/', include('home.urls')),
     path('admin/', admin.site.urls),
+    path('', include('users.urls')),
+    path('users/', include('users.urls')),
 ]
 
 if settings.DEBUG:
