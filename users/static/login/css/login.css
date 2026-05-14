@@ -1,0 +1,451 @@
+/* ─── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand-dark:   #1c5739;
+  --brand-mid:    #294939;
+  --brand-accent: #e2b96f;
+  --brand-light:  #f5f0e8;
+  --ink:          #1c1c1c;
+  --ink-muted:    #6b6b6b;
+  --border:       #e0dbd2;
+  --danger:       #c0392b;
+  --hover-button: #294939;
+  --radius-sm:    6px;
+  --radius-md:    12px;
+  --radius-lg:    18px;
+  --trans:        0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--brand-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Page layout ───────────────────────────────────────────────── */
+.page-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ─── Brand panel (left) ────────────────────────────────────────── */
+.brand-panel {
+  flex: 0 0 42%;
+  background: var(--brand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle geometric accent */
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  right: -80px;
+  width: 340px;
+  height: 340px;
+  border: 1.5px solid rgba(226, 185, 111, 0.18);
+  border-radius: 50%;
+}
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  border: 1.5px solid rgba(226, 185, 111, 0.28);
+  border-radius: 50%;
+}
+
+.brand-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 380px;
+  width: 100%;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 3.5rem;
+}
+
+.logo-mark {
+  width: 28px;
+  height: 28px;
+  background: var(--brand-accent);
+  border-radius: 6px;
+  transform: rotate(12deg);
+  display: inline-block;
+}
+
+.logo-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+/* Headline */
+.brand-copy h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.8rem;
+  line-height: 1.15;
+  color: #fff;
+  margin-bottom: 1.1rem;
+}
+
+.brand-copy h1 em {
+  font-style: italic;
+  color: var(--brand-accent);
+}
+
+.brand-copy p {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+  margin-bottom: 2.4rem;
+}
+
+/* Features list */
+.features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.65);
+}
+
+.feat-icon {
+  color: var(--brand-accent);
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ─── Forms panel (right) ───────────────────────────────────────── */
+.forms-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  overflow-y: auto;
+}
+
+/* ─── Tab strip ─────────────────────────────────────────────────── */
+.tab-strip {
+  position: relative;
+  display: flex;
+  background: #ece8e0;
+  border-radius: 40px;
+  padding: 4px;
+  gap: 2px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 2.5rem;
+}
+
+.tab-btn {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  background: none;
+  border: none;
+  border-radius: 36px;
+  padding: 0.55rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color var(--trans);
+}
+
+.tab-btn.active {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc(50% - 4px);
+  left: 4px;
+  background: #fff;
+  border-radius: 36px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: transform var(--trans);
+}
+
+.tab-indicator.right {
+  transform: translateX(calc(100% + 2px));
+}
+
+/* ─── Form panes ────────────────────────────────────────────────── */
+.form-pane {
+  width: 100%;
+  max-width: 400px;
+  animation: fadeUp 0.38s ease both;
+}
+
+.form-pane.hidden {
+  display: none;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.form-header {
+  margin-bottom: 1.8rem;
+}
+
+.form-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.9rem;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+
+.form-header p {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+/* ─── Fields ────────────────────────────────────────────────────── */
+.field {
+  margin-bottom: 1.1rem;
+}
+
+.field-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.field.half { flex: 1; margin-bottom: 0; }
+
+label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.45rem;
+}
+
+.label-link {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color var(--trans);
+}
+
+.label-link:hover { color: var(--brand-dark); }
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  height: 44px;
+  padding: 0 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: #fff;
+  transition: border-color var(--trans), box-shadow var(--trans);
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--brand-dark);
+  box-shadow: 0 0 0 3px rgba(26,26,46,0.08);
+}
+
+/* Password wrapper */
+.input-pw-wrap {
+  position: relative;
+}
+
+.input-pw-wrap input {
+  padding-right: 2.8rem;
+}
+
+.toggle-pw {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color var(--trans);
+}
+
+.toggle-pw:hover { color: var(--ink); }
+
+/* Field error */
+.field-error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+/* Checkbox */
+.checkbox-field label {
+  font-weight: 400;
+  justify-content: flex-start;
+  gap: 0.6rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-label a {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ─── Submit button ─────────────────────────────────────────────── */
+.btn-submit {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin-top: 1.5rem;
+  background: var(--brand-dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--trans), transform 0.1s;
+}
+
+.btn-submit:hover { background: var(--hover-button); }
+.btn-submit:active { transform: scale(0.99); }
+
+/* ─── Form switch link ──────────────────────────────────────────── */
+.form-switch {
+  margin-top: 1.2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--brand-dark);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+/* ─── Django messages ───────────────────────────────────────────── */
+.django-messages {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+}
+
+.msg {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.msg-error, .msg-danger {
+  background: #fdecea;
+  color: var(--danger);
+  border: 1px solid #f5c6c2;
+}
+
+.msg-success {
+  background: #edfaf2;
+  color: #1a7a43;
+  border: 1px solid #b7e8cd;
+}
+
+.msg-info {
+  background: #eaf3fb;
+  color: #1a5f8a;
+  border: 1px solid #b3d6ee;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-wrapper { flex-direction: column; }
+
+  .brand-panel {
+    flex: none;
+    padding: 2rem 1.5rem 1.8rem;
+    min-height: auto;
+  }
+
+  .brand-inner { max-width: 100%; }
+
+  .brand-copy h1 { font-size: 2rem; }
+
+  .features { display: none; }
+
+  .forms-panel { padding: 2rem 1.25rem 3rem; }
+}
+
+@media (max-width: 420px) {
+  .field-group { flex-direction: column; }
+  .field.half { flex: none; }
+}

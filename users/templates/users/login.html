@@ -1,10 +1,268 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Acceso{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'login/css/login.css' %}" />
 </head>
 <body>
-    <h1>LOGIN</h1>
+
+  <div class="page-wrapper">
+
+    <!-- Panel izquierdo: marca / visual -->
+    <div class="brand-panel">
+      <div class="brand-inner">
+        <div class="logo">
+          <span class="logo-mark"></span>
+          <span class="logo-name">NombreMarca</span>
+        </div>
+        <div class="brand-copy">
+          <h1>Tu espacio,<br /><em>a tu medida.</em></h1>
+          <p>Una plataforma pensada para que trabajes sin fricciones, desde el primer día.</p>
+        </div>
+        <ul class="features">
+          <li><span class="feat-icon">◈</span> Acceso seguro en todo momento</li>
+          <li><span class="feat-icon">◈</span> Sincronización en tiempo real</li>
+          <li><span class="feat-icon">◈</span> Soporte personalizado 24/7</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Panel derecho: formularios -->
+    <div class="forms-panel">
+
+      <!-- Toggle tabs -->
+      <div class="tab-strip">
+        <button class="tab-btn active" data-target="register" id="btn-register">
+          Crear cuenta
+        </button>
+        <button class="tab-btn" data-target="login" id="btn-login">
+          Iniciar sesión
+        </button>
+        <span class="tab-indicator"></span>
+      </div>
+
+      <!-- Mensajes de error/éxito de Django -->
+      {% if messages %}
+        <div class="django-messages">
+          {% for message in messages %}
+            <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- ====== FORMULARIO REGISTRO ====== -->
+      <div class="form-pane" id="pane-register">
+        <div class="form-header">
+          <h2>Bienvenido</h2>
+          <p>Crea tu cuenta en menos de un minuto.</p>
+        </div>
+
+        <form method="POST" action="{% url 'users:register' %}" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="register" />
+
+          <div class="field-group">
+            <div class="field half">
+              <label for="reg-first">Nombre</label>
+              <input
+                type="text"
+                id="reg-first"
+                name="first_name"
+                placeholder="Ana"
+                value="{{ register_form.first_name.value|default:'' }}"
+                autocomplete="given-name"
+                required
+              />
+              {% if register_form.first_name.errors %}
+                <span class="field-error">{{ register_form.first_name.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="field half">
+              <label for="reg-last">Apellido</label>
+              <input
+                type="text"
+                id="reg-last"
+                name="last_name"
+                placeholder="García"
+                value="{{ register_form.last_name.value|default:'' }}"
+                autocomplete="family-name"
+                required
+              />
+              {% if register_form.last_name.errors %}
+                <span class="field-error">{{ register_form.last_name.errors.0 }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reg-email">Correo electrónico</label>
+            <input
+              type="email"
+              id="reg-email"
+              name="email"
+              placeholder="ana@ejemplo.com"
+              value="{{ register_form.email.value|default:'' }}"
+              autocomplete="email"
+              required
+            />
+            {% if register_form.email.errors %}
+              <span class="field-error">{{ register_form.email.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            <label for="reg-username">Usuario</label>
+            <input
+              type="text"
+              id="reg-username"
+              name="username"
+              placeholder="ana_garcia"
+              value="{{ register_form.username.value|default:'' }}"
+              autocomplete="username"
+              required
+            />
+            {% if register_form.username.errors %}
+              <span class="field-error">{{ register_form.username.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            <label for="reg-password1">Contraseña</label>
+            <div class="input-pw-wrap">
+              <input
+                type="password"
+                id="reg-password1"
+                name="password1"
+                placeholder="Mínimo 8 caracteres"
+                autocomplete="new-password"
+                required
+              />
+              <button type="button" class="toggle-pw" aria-label="Mostrar contraseña" data-target="reg-password1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            {% if register_form.password1.errors %}
+              <span class="field-error">{{ register_form.password1.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            <label for="reg-password2">Confirmar contraseña</label>
+            <div class="input-pw-wrap">
+              <input
+                type="password"
+                id="reg-password2"
+                name="password2"
+                placeholder="Repite tu contraseña"
+                autocomplete="new-password"
+                required
+              />
+              <button type="button" class="toggle-pw" aria-label="Mostrar contraseña" data-target="reg-password2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            {% if register_form.password2.errors %}
+              <span class="field-error">{{ register_form.password2.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field checkbox-field">
+            <label class="checkbox-label">
+              <input type="checkbox" name="terms" required />
+              <span>Acepto los <a href="#">términos y condiciones</a></span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-submit">Crear cuenta</button>
+
+          <p class="form-switch">
+            ¿Ya tienes cuenta?
+            <button type="button" class="link-btn" data-target="login">Inicia sesión</button>
+          </p>
+        </form>
+      </div>
+
+      <!-- ====== FORMULARIO LOGIN ====== -->
+      <div class="form-pane hidden" id="pane-login">
+        <div class="form-header">
+          <h2>Qué gusto verte</h2>
+          <p>Ingresa tus credenciales para continuar.</p>
+        </div>
+
+        <form method="POST" action="{% url 'users:login' %}" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="login" />
+
+          <div class="field">
+            <label for="log-username">Usuario o correo</label>
+            <input
+              type="text"
+              id="log-username"
+              name="username"
+              placeholder="ana_garcia"
+              value="{{ login_form.username.value|default:'' }}"
+              autocomplete="username"
+              required
+            />
+            {% if login_form.username.errors %}
+              <span class="field-error">{{ login_form.username.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            <label for="log-password">
+              Contraseña
+              <a href="{% url 'users:password_reset' %}" class="label-link">¿Olvidaste tu contraseña?</a>
+            </label>
+            <div class="input-pw-wrap">
+              <input
+                type="password"
+                id="log-password"
+                name="password"
+                placeholder="Tu contraseña"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" class="toggle-pw" aria-label="Mostrar contraseña" data-target="log-password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            {% if login_form.password.errors %}
+              <span class="field-error">{{ login_form.password.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field checkbox-field">
+            <label class="checkbox-label">
+              <input type="checkbox" name="remember_me" />
+              <span>Recordarme en este dispositivo</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-submit">Iniciar sesión</button>
+
+          <p class="form-switch">
+            ¿No tienes cuenta?
+            <button type="button" class="link-btn" data-target="register">Regístrate</button>
+          </p>
+        </form>
+      </div>
+
+    </div><!-- /forms-panel -->
+  </div><!-- /page-wrapper -->
+
+  <script src="{% static 'login/js/login.js' %}"></script>
+
+  <!-- Abrir directamente el panel de login si el servidor lo indica -->
+  {% if active_tab == 'login' %}
+  <script>switchTab('login');</script>
+  {% endif %}
+
 </body>
 </html>
