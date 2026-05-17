@@ -25,3 +25,15 @@ class Usuario(models.Model):
 
     def __str__(self):
         return self.username
+
+class MenuOpcion(models.Model):
+    opcion_id = models.BigAutoField(primary_key=True)
+    nombre    = models.CharField(max_length=100)
+    url_name  = models.CharField(max_length=100)
+    rol_id    = models.IntegerField()
+    orden     = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'menu_opciones'
+        managed  = False
+        ordering = ['orden']

@@ -1,14 +1,19 @@
-from django.shortcuts import render
-
-# Create your views here.
-from django.shortcuts import render
-
+from django.shortcuts import render, redirect
+from users.decorators import login_requerido
+@login_requerido
 def home(request):
-    personas = [
-        "Alan",
-        "Maria",
-        "Juan"
-    ]
-    return render(request, 'home.html',{
-        'personas': personas
-    })
+    return render(request, 'home/home.html')
+
+@login_requerido
+def home_admin(request):
+    # Solo rol 0 puede entrar aquí
+    if request.session.get('usuario_rol') != 0:
+        return redirect('home-user')
+    return render(request, 'home/home_admin.html')
+
+@login_requerido
+def home_user(request):
+    # Solo rol 1 puede entrar aquí
+    if request.session.get('usuario_rol') != 1:
+        return redirect('home-admin')
+    return render(request, 'home/home_user.html')

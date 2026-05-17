@@ -5,6 +5,7 @@ from .models import Usuario
 from .forms import RegisterForm, LoginForm
 from django.contrib.auth.hashers import check_password
 
+rutas = {0: 'home-admin', 1: 'home-user'}
 def auth_page(request):
     register_form = RegisterForm()
     login_form = LoginForm()
@@ -40,11 +41,13 @@ def auth_page(request):
                     usuario = Usuario.objects.get(username=username)
                     if usuario.check_password(password):
                         # Guardamos el usuario en sesión manualmente
-                        request.session['usuario_id'] = usuario.id
+                        request.session['usuario_id'] = usuario.user_id
                         request.session['usuario_name'] = usuario.username
                         request.session['usuario_rol'] = usuario.rol_id
                         messages.success(request, f'¡Hola de nuevo, {usuario.username}!')
-                        return redirect('home')  # cambia a tu URL destino
+
+                        return redirect(rutas.get(usuario.rol_id, 'home'))
+                        #return redirect('home')  # cambia a tu URL destino
                     else:
                         messages.error(request, 'Usuario o contraseña incorrectos.')
                 except Usuario.DoesNotExist:
@@ -56,3 +59,9 @@ def auth_page(request):
         'active_tab': active_tab,
     }
     return render(request, 'users/login.html', context)
+
+def logout_view(request):
+    if request.method == 'POST':
+        request.session.flush()  # borra todos los datos de sesión
+        messages.info(request, 'Sesión cerrada correctamente.')
+    return redirect('users:login')

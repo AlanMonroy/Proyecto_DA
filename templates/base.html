@@ -4,30 +4,67 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <!-- CSS GLOBAL -->
+  <link rel="stylesheet" href="{% static 'base.css' %}">
 
-    <title>{% block title %}{% endblock %}</title>
-
-    <!-- CSS GLOBAL
-    <link rel="stylesheet" href="{% static 'home/css/global.css' %}">
-    -->
-
-    <!-- CSS POR PÁGINA -->
-    {% block styles %}
-    {% endblock %}
+  {% block styles %}{% endblock %}
 </head>
 <body>
 
-    {% block content %}
-    {% endblock %}
+  {% if request.session.usuario_id %}
+  <nav class="navbar">
 
-    <!-- JS GLOBAL
-    <script src="{% static 'home/js/global.js' %}"></script>-->
+    <!-- Logo -->
+    <a href="{% url 'home' %}" class="navbar-brand">
+      <span class="logo-mark"></span>
+      <span>NombreMarca</span>
+    </a>
 
-    <!-- JS POR PÁGINA -->
-    {% block scripts %}
-    {% endblock %}
+    <!-- Opciones dinámicas desde BD -->
+    <ul class="navbar-menu">
+      {% for opcion in menu_opciones %}
+        <li>
+          <a href="{% url opcion.url_name %}"
+             class="{% if request.resolver_match.url_name == opcion.url_name %}active{% endif %}">
+            {{ opcion.nombre }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
 
-    {% django_browser_reload_script %}
+    <!-- Usuario + logout -->
+    <div class="navbar-end">
+      <span class="navbar-user">
+        Hola, <strong>{{ request.session.usuario_name }}</strong>
+      </span>
+      <form method="POST" action="{% url 'users:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-logout">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
+
+  </nav>
+  {% endif %}
+
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block scripts %}{% endblock %}
+
+  {% django_browser_reload_script %}
 </body>
 </html>
