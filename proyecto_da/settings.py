@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django_browser_reload',
     'home',
     'users',
+    'reportes',
 ]
 
 MIDDLEWARE = [
@@ -78,13 +79,6 @@ WSGI_APPLICATION = 'proyecto_da.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-"""DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}"""
 
 load_dotenv()
 
