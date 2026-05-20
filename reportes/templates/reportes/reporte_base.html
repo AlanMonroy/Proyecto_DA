@@ -133,7 +133,7 @@
         <tr class="fila-dato">
           {% for col in columnas %}
           <td data-label="{{ col.label }}">
-            {% with valor=fila|getattr:col.campo %}
+            {% with valor=fila|get_attr:col.campo %}
               {% if col.tipo == 'badge' %}
                 <span class="badge badge-{{ valor|lower }}">{{ valor }}</span>
               {% elif col.tipo == 'fecha' %}
@@ -149,7 +149,7 @@
                   <span class="badge badge-inactivo">No</span>
                 {% endif %}
               {% else %}
-                {{ valor|default:"—" }}
+                {% if valor is not None %}{{ valor }}{% else %}—{% endif %}
               {% endif %}
             {% endwith %}
           </td>

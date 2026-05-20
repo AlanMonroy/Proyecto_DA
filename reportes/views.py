@@ -7,6 +7,7 @@ from users.decorators import login_requerido
 # Adapta este patrón para cualquier modelo/tabla que necesites.
 
 from users.models import Usuario  # cambia por tu modelo
+from .models import Refacciones
 
 
 @login_requerido
@@ -109,3 +110,71 @@ def eliminar_usuario(request, pk):
     if request.method == 'POST':
         usuario.delete()
     return redirect('reporte_usuarios')
+
+@login_requerido
+def reporte_refacciones(request):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'refaccion_id')
+    direccion = request.GET.get('dir', 'asc')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = Refacciones.objects.all()
+    print(f"Primera refaccion: {qs.first().__dict__}")
+
+    if q:
+        if columna == 'nombre':
+            qs = qs.filter(nombre__icontains=q)
+        elif columna == 'descripcion':
+            qs = qs.filter(descripcion__icontains=q)
+        else:
+            qs = qs.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q)
+            )
+
+    campos_validos = ['refaccion_id', 'nombre', 'descripcion', 'fecha']
+    if orden in campos_validos:
+        orden_str = f'-{orden}' if direccion == 'desc' else orden
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'refaccion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'descripcion', 'label': 'Descripción', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Fecha', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'nombre',      'label': 'Nombre'},
+        {'campo': 'descripcion', 'label': 'Descripción'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Refacciones',
+        'reporte_subtitulo':   'Gestión de refacciones',
+        'reporte_breadcrumb':  'Inicio / Refacciones',
+        'puede_crear':         request.session.get('usuario_rol') == 0,
+        'puede_editar':        False,
+        'puede_eliminar':      False,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/refacciones/crear/',
+        'btn_crear_texto':     'Nueva refacción',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)

@@ -6,9 +6,8 @@ from django import template
 
 register = template.Library()
 
-@register.filter
-def getattr(obj, attr):
-    """Permite acceder a atributos dinámicos en templates: {{ obj|getattr:campo }}"""
+@register.filter(name='get_attr')
+def get_attr(obj, attr):
     try:
         return getattr(obj, attr, '—')
     except Exception:
