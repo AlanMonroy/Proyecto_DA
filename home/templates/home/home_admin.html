@@ -11,6 +11,14 @@
 
 {% block content %}
     <h1>HOME ADMIN</h1>
+    {% for opcion in menu_opciones %}
+        <li>
+          <a href="{% url opcion.url_name %}"
+             class="{% if request.resolver_match.url_name == opcion.url_name %}active{% endif %}">
+            {{ opcion.nombre }}
+          </a>
+        </li>
+    {% endfor %}
 {% endblock %}
 
 {% block scripts %}

@@ -21,7 +21,7 @@
   <nav class="navbar">
 
     <!-- Logo -->
-    <a href="{% url 'home' %}" class="navbar-brand">
+    <a href="{% if request.session.usuario_rol == 0 %}{% url 'home-admin' %}{% else %}{% url 'home-user' %}{% endif %}" class="navbar-brand">
       <span class="logo-mark"></span>
       <span>NombreMarca</span>
     </a>
