@@ -20,3 +20,14 @@ def pluralize(value, suffix='s'):
         return '' if int(value) == 1 else suffix
     except (ValueError, TypeError):
         return ''
+
+@register.filter(name='get_color')
+def get_color(fila, col):
+    try:
+        campo_color = col.get('campo_color', '')
+        objeto = getattr(fila, col.get('campo', ''), None)
+        if objeto is None:
+            return ''
+        return getattr(objeto, campo_color, '')
+    except Exception:
+        return ''

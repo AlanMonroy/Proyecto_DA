@@ -1,6 +1,33 @@
 from django.db import models
 
 # Create your models here.
+class ProyectoEstatus(models.Model):
+    estatus_id = models.BigAutoField(primary_key=True)
+    nombre = models.TextField()
+    color = models.TextField(null=True, blank=True)
+    orden = models.IntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'proyecto_estatus'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
+
+class ProyectoPrioridad(models.Model):
+    prioridad_id = models.BigAutoField(primary_key=True)
+    nombre = models.TextField()
+    color = models.TextField(null=True, blank=True)
+    orden = models.IntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'proyecto_prioridad'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
 
 class Refacciones(models.Model):
     refaccion_id = models.BigAutoField(primary_key=True)
@@ -16,19 +43,6 @@ class Refacciones(models.Model):
         return self.nombre  # ← nombre es string, refaccion_id es entero
 
 class Proyectos(models.Model):
-    ESTATUS_CHOICES = [
-        (1, 'PENDIENTE'),
-        (2, 'EN PROCESO'),
-        (3, 'FINALIZADO'),
-        (4, 'CANCELADO'),
-    ]
-
-    PRIORIDAD_CHOICES = [
-        (1, 'BAJA'),
-        (2, 'MEDIA'),
-        (3, 'ALTA'),
-        (4, 'CRITICA'),
-    ]
     proyecto_id = models.BigAutoField(primary_key=True)
     nombre = models.TextField()
     descripcion = models.TextField(null=True, blank=True)
@@ -36,14 +50,16 @@ class Proyectos(models.Model):
     fecha_inicio = models.DateField(null=True, blank=True)
     fecha_fin = models.DateField(null=True, blank=True)
 
-    estatus = models.IntegerField(
-        choices=ESTATUS_CHOICES,
-        default=0
+    estatus = models.ForeignKey(
+        ProyectoEstatus,
+        on_delete=models.PROTECT,
+        db_column='estatus'
     )
 
-    prioridad = models.IntegerField(
-        choices=PRIORIDAD_CHOICES,
-        default=0
+    prioridad = models.ForeignKey(
+        ProyectoPrioridad,
+        on_delete=models.PROTECT,
+        db_column='prioridad'
     )
 
     porcentaje_avance = models.DecimalField(
