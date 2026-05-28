@@ -2,13 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Q
 from users.decorators import login_requerido
+from .views_crud import form_crear, form_editar, form_eliminar
+from users.models import Usuario  # cambia por tu modelo
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
-
-from users.models import Usuario  # cambia por tu modelo
-from .models import Refacciones, Proyectos
-
 
 @login_requerido
 def reporte_usuarios(request):
@@ -265,3 +264,134 @@ def reporte_proyectos(request):
     }
 
     return render(request, 'reportes/reporte_base.html', context)
+
+
+# ── FORMULARIOS ───────────────────────────
+# Reutilizable para crear y editar
+def get_campos_proyecto():
+    return [
+        {
+            'nombre': 'nombre',
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del proyecto',
+        },
+        {
+            'nombre': 'descripcion',
+            'label': 'Descripción',
+            'tipo': 'textarea',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Descripción del proyecto',
+            'filas': 3,
+        },
+        {
+            'nombre': 'estatus',
+            'label': 'Estatus',
+            'tipo': 'select',
+            'campo_fk': 'estatus',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': ProyectoEstatus.objects.filter(activo=True).order_by('orden'),
+        },
+        {
+            'nombre': 'prioridad',
+            'label': 'Prioridad',
+            'tipo': 'select',
+            'campo_fk': 'prioridad',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': ProyectoPrioridad.objects.filter(activo=True).order_by('orden'),
+        },
+        {
+            'nombre': 'porcentaje_avance',
+            'label': 'Avance (%)',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'min': 0,
+            'max': 100,
+        },
+        {
+            'nombre': 'cotizacion',
+            'label': 'Cotización',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'costo_real',
+            'label': 'Costo Real',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'tipo_proyecto',
+            'label': 'Tipo de Proyecto',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Ej. Interno, Externo',
+        },
+        {
+            'nombre': 'categoria',
+            'label': 'Categoría',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Ej. Desarrollo, Mantenimiento',
+        },
+        {
+            'nombre': 'fecha_inicio',
+            'label': 'Fecha Inicio',
+            'tipo': 'date',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'fecha_fin',
+            'label': 'Fecha Fin',
+            'tipo': 'date',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'activo',
+            'label': 'Activo',
+            'tipo': 'boolean',
+            'requerido': False,
+            'ancho': 'completo',
+            'label_check': 'Este proyecto está activo',
+        },
+    ]
+
+
+@login_requerido
+def proyecto_crear(request):
+    return form_crear(
+        request,
+        model=Proyectos,
+        campos_def=get_campos_proyecto(),
+        form_titulo='Nuevo Proyecto',
+        url_lista='reporte_proyectos',
+    )
+
+
+@login_requerido
+def proyecto_editar(request, pk):
+    return form_editar(
+        request,
+        model=Proyectos,
+        pk=pk,
+        campos_def=get_campos_proyecto(),
+        form_titulo='Editar Proyecto',
+        url_lista='reporte_proyectos',
+    )
+
+
+@login_requerido
+def proyecto_eliminar(request, pk):
+    return form_eliminar(request, Proyectos, pk)
