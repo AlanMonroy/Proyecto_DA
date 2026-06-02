@@ -188,7 +188,8 @@ def reporte_proyectos(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
-    qs = Proyectos.objects.all()
+    #qs = Proyectos.objects.all()
+    qs = Proyectos.objects.select_related('estatus', 'prioridad').all()
 
     if q:
         if columna == 'nombre':
@@ -256,8 +257,8 @@ def reporte_proyectos(request):
         'reporte_subtitulo':   'Gestión de proyectos',
         'reporte_breadcrumb':  'Inicio / Proyectos',
         'puede_crear':         request.session.get('usuario_rol') == 0,
-        'puede_editar':        False,
-        'puede_eliminar':      False,
+        'puede_editar':        request.session.get('usuario_rol') == 0,
+        'puede_eliminar':      request.session.get('usuario_rol') == 0,
         'puede_exportar':      True,
         'url_crear':           '/reportes/proyectos/crear/',
         'btn_crear_texto':     'Nuevo Proyecto',

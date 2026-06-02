@@ -78,6 +78,8 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             except Exception as e:
                 errores['__all__'] = str(e)
 
+        print(f"Errores: {errores}")
+
         # Si hay errores, re-renderiza el modal con errores
         context = {
             'form_titulo':  form_titulo,
@@ -89,13 +91,14 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
         }
         return render(request, template_form, context)
 
-    # GET — mostrar modal vacío
+    # GET — mostrar modal
     context = {
         'form_titulo': form_titulo,
         'form_campos': campos,
         'form_action': request.path,
         'objeto':      None,
         'errores':     {},
+        'valores_post': request.POST,  #guardar los valores llenados para no volver a llenar
         **(extra_context or {}),
     }
     return render(request, template_form, context)

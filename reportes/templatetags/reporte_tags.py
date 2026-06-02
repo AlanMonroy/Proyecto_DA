@@ -31,3 +31,17 @@ def get_color(fila, col):
         return getattr(objeto, campo_color, '')
     except Exception:
         return ''
+
+@register.filter(name='get_pk')
+def get_pk(obj):
+    try:
+        return str(obj.pk)
+    except Exception:
+        return str(obj)
+
+@register.filter(name='get_dict')
+def get_dict(diccionario, clave):
+    try:
+        return diccionario.get(clave, '')
+    except Exception:
+        return ''

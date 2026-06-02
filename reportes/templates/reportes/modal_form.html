@@ -28,8 +28,8 @@
 
     <!-- Form -->
     <form hx-post="{{ form_action }}"
-          hx-target="#modal-form-overlay"
-          hx-swap="outerHTML"
+          hx-target="#htmx-modal"
+          hx-swap="innerHTML"
           novalidate>
       {% csrf_token %}
       {% if objeto %}
@@ -53,7 +53,7 @@
               type="{{ campo.tipo }}"
               id="field-{{ campo.nombre }}"
               name="{{ campo.nombre }}"
-              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
+              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
               placeholder="{{ campo.placeholder|default:'' }}"
               {% if campo.requerido %}required{% endif %}
               {% if campo.max_length %}maxlength="{{ campo.max_length }}"{% endif %}
@@ -65,7 +65,8 @@
               type="number"
               id="field-{{ campo.nombre }}"
               name="{{ campo.nombre }}"
-              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
+              {# value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}" #}
+              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
               placeholder="{{ campo.placeholder|default:'0' }}"
               {% if campo.min is not None %}min="{{ campo.min }}"{% endif %}
               {% if campo.max is not None %}max="{{ campo.max }}"{% endif %}
@@ -79,7 +80,8 @@
               type="date"
               id="field-{{ campo.nombre }}"
               name="{{ campo.nombre }}"
-              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d'|default:'' }}{% endif %}"
+              {# value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d'|default:'' }}{% endif %}" #}
+              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d'|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|date:'Y-m-d'|default:'' }}{% endif %}"
               {% if campo.requerido %}required{% endif %}
             />
 
@@ -89,7 +91,8 @@
               type="datetime-local"
               id="field-{{ campo.nombre }}"
               name="{{ campo.nombre }}"
-              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% endif %}"
+              {# value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% endif %}" #}
+              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% endif %}"
               {% if campo.requerido %}required{% endif %}
             />
 
@@ -101,38 +104,55 @@
               placeholder="{{ campo.placeholder|default:'' }}"
               rows="{{ campo.filas|default:3 }}"
               {% if campo.requerido %}required{% endif %}
-            >{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}</textarea>
+            >{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}</textarea>
 
-          <!-- SELECT -->
-          {% elif campo.tipo == 'select' %}
-            <select
-              id="field-{{ campo.nombre }}"
-              name="{{ campo.nombre }}"
-              {% if campo.requerido %}required{% endif %}
-            >
-              <option value="">-- Selecciona --</option>
-              {% for opcion in campo.opciones %}
-              <option value="{{ opcion.valor }}"
+        <!-- SELECT -->
+        {% elif campo.tipo == 'select' %}
+            <select id="field-{{ campo.nombre }}" name="{{ campo.nombre }}"
+                {% if campo.requerido %}required{% endif %}>
+                <option value="">-- Selecciona --</option>
                 {% if objeto %}
-                  {% with val=objeto|get_attr:campo.nombre %}
-                    {% if val == opcion.valor or val|stringformat:'s' == opcion.valor|stringformat:'s' %}selected{% endif %}
-                  {% endwith %}
+                    {% with val=objeto|get_attr:campo.nombre %}
+                        {% with val_pk=val|get_pk %}
+                        {% for opcion in campo.opciones %}
+                            <option value="{{ opcion.valor }}"
+                            {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}>
+                            {{ opcion.label }}
+                            </option>
+                        {% endfor %}
+                        {% endwith %}
+                    {% endwith %}
+                {% elif valores_post %}
+                    {% with val_post=valores_post|get_dict:campo.nombre %}
+                        {% for opcion in campo.opciones %}
+                            <option value="{{ opcion.valor }}"
+                            {% if val_post == opcion.valor %}selected{% endif %}>
+                            {{ opcion.label }}
+                            </option>
+                        {% endfor %}
+                    {% endwith %}
+                {% else %}
+                    {% for opcion in campo.opciones %}
+                        <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
+                    {% endfor %}
                 {% endif %}
-              >{{ opcion.label }}</option>
-              {% endfor %}
             </select>
 
-          <!-- BOOLEAN / CHECKBOX -->
-          {% elif campo.tipo == 'boolean' %}
+        <!-- BOOLEAN / CHECKBOX -->
+        {% elif campo.tipo == 'boolean' %}
             <label class="checkbox-label">
-              <input
+            <input
                 type="checkbox"
                 id="field-{{ campo.nombre }}"
                 name="{{ campo.nombre }}"
                 value="true"
-                {% if objeto %}{% with val=objeto|get_attr:campo.nombre %}{% if val %}checked{% endif %}{% endwith %}{% endif %}
-              />
-              <span>{{ campo.label_check|default:campo.label }}</span>
+                {% if objeto %}
+                    {% with val=objeto|get_attr:campo.nombre %}{% if val %}checked{% endif %}{% endwith %}
+                {% elif valores_post %}
+                    {% if valores_post|get_dict:campo.nombre %}checked{% endif %}
+                {% endif %}
+            />
+            <span>{{ campo.label_check|default:campo.label }}</span>
             </label>
 
           <!-- COLOR -->
@@ -158,11 +178,11 @@
           {% endif %}
 
           <!-- Errores del campo -->
-          {% if errores %}
-            {% with err=errores|get_attr:campo.nombre %}
-              {% if err %}<span class="field-error">{{ err }}</span>{% endif %}
-            {% endwith %}
-          {% endif %}
+        {% if errores %}
+          {% with err=errores|get_dict:campo.nombre %}
+            {% if err %}<span class="field-error">{{ err }}</span>{% endif %}
+          {% endwith %}
+        {% endif %}
 
         </div>
         {% endfor %}
