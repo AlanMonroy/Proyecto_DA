@@ -3,7 +3,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
-from users.models import Usuario  # cambia por tu modelo
+
+from users.models import Usuario, Rol
 from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
@@ -21,7 +22,8 @@ def reporte_usuarios(request):
     page       = request.GET.get('page', 1)
 
     # ── Queryset base ─────────────────────────────────────────────
-    qs = Usuario.objects.all()
+    #qs = Usuario.objects.all()
+    qs = Usuario.objects.select_related('rol_id').all()
 
     # ── Filtro búsqueda ───────────────────────────────────────────
     if q:
@@ -83,32 +85,16 @@ def reporte_usuarios(request):
         'reporte_breadcrumb': 'Inicio / Usuarios',
 
         # Permisos CRUD (controla qué botones se muestran)
-        'puede_crear':    request.session.get('usuario_rol') == 0,
-        'puede_editar':   False,#request.session.get('usuario_rol') == 0,
-        'puede_eliminar': False,#request.session.get('usuario_rol') == 0,
+        'puede_crear': request.session.get('usuario_rol') == 0,
+        'puede_editar': request.session.get('usuario_rol') == 0,
+        'puede_eliminar': request.session.get('usuario_rol') == 0,
         'puede_exportar': True,
-
         # URLs CRUD
-        'url_crear':          '/usuarios/crear/',
-        'url_editar':         'usuarios_editar',   # name de la URL (usa {% url %})
-        'url_eliminar_base':  '/usuarios/eliminar/',
-        'url_exportar':       '/usuarios/exportar/',
-        'btn_crear_texto':    'Nuevo usuario',
+        'url_crear': '/reportes/usuarios/crear/',
+        'btn_crear_texto': 'Nuevo usuario',
     }
 
     return render(request, 'reportes/reporte_base.html', context)
-
-
-# ── Vista eliminar (reutilizable para cualquier modelo) ──────────
-@login_requerido
-def eliminar_usuario(request, pk):
-    if request.session.get('usuario_rol') != 0:
-        return redirect('home-user')
-
-    usuario = get_object_or_404(Usuario, pk=pk)
-    if request.method == 'POST':
-        usuario.delete()
-    return redirect('reporte_usuarios')
 
 @login_requerido
 def reporte_refacciones(request):
@@ -369,7 +355,6 @@ def get_campos_proyecto():
         },
     ]
 
-
 @login_requerido
 def proyecto_crear(request):
     return form_crear(
@@ -379,7 +364,6 @@ def proyecto_crear(request):
         form_titulo='Nuevo Proyecto',
         url_lista='reporte_proyectos',
     )
-
 
 @login_requerido
 def proyecto_editar(request, pk):
@@ -392,7 +376,63 @@ def proyecto_editar(request, pk):
         url_lista='reporte_proyectos',
     )
 
-
 @login_requerido
 def proyecto_eliminar(request, pk):
     return form_eliminar(request, Proyectos, pk)
+
+def get_campos_usuario():
+    return [
+        {
+            'nombre': 'usuario',
+            'label': 'Usuario',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del usuario',
+        },
+        {
+            'nombre': 'email',
+            'label': 'Email',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Correo electronico',
+            'filas': 3,
+        },
+        {
+            'nombre': 'rol',
+            'label': 'Rol',
+            'tipo': 'select',
+            'campo_fk': 'rol_id',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': Rol.objects.order_by('rol_id'),
+        },
+    ]
+
+
+@login_requerido
+def create_user(request):
+    return form_crear(
+        request,
+        model=Usuario,
+        campos_def=get_campos_usuario(),
+        form_titulo='Nuevo usuario',
+        url_lista='reporte_usuarios',
+    )
+
+@login_requerido
+def edit_user(request, pk):
+    return form_editar(
+        request,
+        model=Usuario,
+        pk=pk,
+        campos_def=get_campos_usuario(),
+        form_titulo='Editar usuario',
+        url_lista='reporte_usuarios',
+    )
+
+
+@login_requerido
+def delete_user(request, pk):
+    return form_eliminar(request, Usuario, pk)

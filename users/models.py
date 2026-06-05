@@ -5,13 +5,27 @@ from django.http import HttpResponse
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 
+class Rol(models.Model):
+    rol_id = models.BigAutoField(primary_key=True)
+    nombre_rol = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'rol'  # ← apunta a tu tabla existente en Supabase
+        managed  = False
+
+    def __str__(self):
+        return self.nombre_rol
 
 class Usuario(models.Model):
     user_id = models.BigAutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=255)
     email    = models.EmailField(unique=True)
-    rol_id   = models.IntegerField(default=1)
+    rol_id = models.ForeignKey(
+        Rol,
+        on_delete=models.PROTECT,
+        db_column='rol_id',
+    )
 
     class Meta:
         db_table = 'usuarios'  # ← apunta a tu tabla existente en Supabase
