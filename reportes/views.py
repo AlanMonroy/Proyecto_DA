@@ -23,7 +23,7 @@ def reporte_usuarios(request):
 
     # ── Queryset base ─────────────────────────────────────────────
     #qs = Usuario.objects.all()
-    qs = Usuario.objects.select_related('rol_id').all()
+    qs = Usuario.objects.select_related('rol').all()
 
     # ── Filtro búsqueda ───────────────────────────────────────────
     if q:
@@ -383,7 +383,7 @@ def proyecto_eliminar(request, pk):
 def get_campos_usuario():
     return [
         {
-            'nombre': 'usuario',
+            'nombre': 'username', #nombre en el modelos
             'label': 'Usuario',
             'tipo': 'text',
             'requerido': True,
@@ -413,6 +413,7 @@ def get_campos_usuario():
 
 @login_requerido
 def create_user(request):
+    print(f"CREATE USER - Method: {request.method}")
     return form_crear(
         request,
         model=Usuario,

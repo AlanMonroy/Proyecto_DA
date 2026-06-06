@@ -21,10 +21,10 @@ class Usuario(models.Model):
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=255)
     email    = models.EmailField(unique=True)
-    rol_id = models.ForeignKey(
+    rol = models.ForeignKey(  # ← era rol_id, ahora rol
         Rol,
         on_delete=models.PROTECT,
-        db_column='rol_id',
+        db_column='rol_id',  # ← la BD sigue igual
     )
 
     class Meta:

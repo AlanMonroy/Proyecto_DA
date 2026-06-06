@@ -35,6 +35,7 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
     form_titulo: título del modal
     url_lista:   nombre de la URL del reporte (para refrescar la tabla)
     """
+    print(f"Method: {request.method}, Path: {request.path}")
     campos = get_form_campos(campos_def)
 
     if request.method == 'POST':
@@ -71,11 +72,12 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             try:
                 obj = model(**datos)
                 obj.save()
-                # Respuesta HTMX: cierra el modal y refresca la tabla
+                print(f"Guardado: {obj}")  # ← agrega esto
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'
                 return response
             except Exception as e:
+                print(f"Error al guardar: {e}")  # ← agrega esto
                 errores['__all__'] = str(e)
 
         print(f"Errores: {errores}")
