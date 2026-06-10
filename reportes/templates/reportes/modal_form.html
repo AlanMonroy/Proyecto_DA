@@ -48,7 +48,7 @@
           </label>
 
           <!-- TEXT / EMAIL / URL -->
-          {% if campo.tipo == 'text' or campo.tipo == 'email' or campo.tipo == 'url' %}
+          {% if campo.tipo == 'text' or campo.tipo == 'email' or campo.tipo == 'url' or campo.tipo == 'password' %}
             <input
               type="{{ campo.tipo }}"
               id="field-{{ campo.nombre }}"

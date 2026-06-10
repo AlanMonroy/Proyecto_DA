@@ -47,6 +47,9 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             requerido = campo.get('requerido', False)
             tipo      = campo.get('tipo', 'text')
 
+            if campo.get('especial'): #caso de password
+                continue
+
             valor = request.POST.get(nombre, '').strip()
 
             if requerido and not valor:
@@ -68,17 +71,38 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             elif valor:
                 datos[nombre] = valor
 
+        # ANTES
         if not errores:
             try:
                 obj = model(**datos)
                 obj.save()
-                print(f"Guardado: {obj}")  # ← agrega esto
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'
                 return response
             except Exception as e:
-                print(f"Error al guardar: {e}")  # ← agrega esto
                 errores['__all__'] = str(e)
+
+        # DESPUÉS
+        if not errores:
+            p1 = request.POST.get('password1', '')
+            p2 = request.POST.get('password2', '')
+            if p1 or p2:
+                if p1 != p2:
+                    errores['password2'] = 'Las contraseñas no coinciden.'
+                elif len(p1) < 8:
+                    errores['password1'] = 'La contraseña debe tener al menos 8 caracteres.'
+
+            if not errores:
+                try:
+                    obj = model(**datos)
+                    if p1:
+                        obj.set_password(p1)
+                    obj.save()
+                    response = HttpResponse(status=204)
+                    response['HX-Trigger'] = 'refreshTabla'
+                    return response
+                except Exception as e:
+                    errores['__all__'] = str(e)
 
         print(f"Errores: {errores}")
 
@@ -111,6 +135,8 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                 extra_context=None):
     """Vista genérica para editar un registro vía HTMX."""
     objeto = get_object_or_404(model, pk=pk)
+    # Filtrar campos solo_crear
+    campos_def = [c for c in campos_def if not c.get('solo_crear')]
     campos = get_form_campos(campos_def, objeto)
 
     if request.method == 'POST':
