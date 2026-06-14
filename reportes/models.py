@@ -96,3 +96,19 @@ class Proyectos(models.Model):
 
     def __str__(self):
         return self.nombre
+
+class Cliente(models.Model):
+    cliente_id = models.BigAutoField(primary_key=True)
+    nombre_cliente = models.TextField()
+    rfc = models.TextField()
+    nombre_contacto = models.TextField()
+    email_contacto = models.TextField()
+    telefono_contacto = models.TextField()
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'cliente'
+        managed = False
+
+    def __str__(self):
+        return self.nombre_cliente

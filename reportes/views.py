@@ -5,7 +5,7 @@ from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -248,6 +248,85 @@ def reporte_proyectos(request):
         'puede_exportar':      True,
         'url_crear':           '/reportes/proyectos/crear/',
         'btn_crear_texto':     'Nuevo Proyecto',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)
+
+
+@login_requerido
+def reporte_clientes(request):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'proyecto_id')
+    direccion = request.GET.get('dir', 'asc')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = Cliente.objects.all()
+
+    if q:
+        if columna == 'nombre_cliente':
+            qs = qs.filter(nombre_cliente_icontains=q)
+        elif columna == 'rfc':
+            qs = qs.filter(rfc__icontains=q)
+        else:
+            qs = qs.filter(
+                Q(nombre_cliente_icontains=q) |
+                Q(rfc__icontains=q)
+            )
+
+    campos_validos = [
+        'cliente_id',
+        'nombre_cliente',
+        'rfc',
+        'nombre_contacto',
+        'email_contacto',
+        'telefono_contacto',
+    ]
+    if orden in campos_validos:
+        orden_str = f'-{orden}' if direccion == 'desc' else orden
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'cliente_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'nombre_cliente', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'rfc', 'label': 'Descripción', 'RFC': 'texto', 'ordenable': True},
+        {'campo': 'nombre_contacto', 'label': 'Contacto - Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'email_contacto', 'label': 'Contacto - Email', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'telefono_contacto', 'label': 'Contacto - Telefono', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'activo', 'label': 'Activo', 'tipo': 'boolean', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'nombre_cliente',      'label': 'Nombre'},
+        {'campo': 'rfc', 'label': 'RFC'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Clientes',
+        'reporte_subtitulo':   'Gestión de clientes',
+        'reporte_breadcrumb':  'Inicio / Clientes',
+        'puede_crear':         request.session.get('usuario_rol') == 0,
+        'puede_editar':        request.session.get('usuario_rol') == 0,
+        'puede_eliminar':      request.session.get('usuario_rol') == 0,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/clientes/crear/',
+        'btn_crear_texto':     'Nuevo Cliente',
     }
 
     return render(request, 'reportes/reporte_base.html', context)
