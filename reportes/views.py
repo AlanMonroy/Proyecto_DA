@@ -12,7 +12,6 @@ from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, 
 
 @login_requerido
 def reporte_usuarios(request):
-
     # ── Parámetros GET ────────────────────────────────────────────
     q          = request.GET.get('q', '').strip()
     columna    = request.GET.get('columna', '')
@@ -299,6 +298,7 @@ def reporte_clientes(request):
         {'campo': 'cliente_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre_cliente', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'rfc', 'label': 'Descripción', 'RFC': 'texto', 'ordenable': True},
+        {'campo': 'direccion', 'label': 'Direccion', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre_contacto', 'label': 'Contacto - Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'email_contacto', 'label': 'Contacto - Email', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'telefono_contacto', 'label': 'Contacto - Telefono', 'tipo': 'texto', 'ordenable': True},
@@ -532,7 +532,95 @@ def edit_user(request, pk):
         url_lista='reporte_usuarios',
     )
 
-
 @login_requerido
 def delete_user(request, pk):
     return form_eliminar(request, Usuario, pk)
+
+#-----------CLIENTES------------#
+def get_campos_cliente():
+    return [
+        {
+            'nombre': 'nombre_cliente', #nombre en el models
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del cliente',
+        },
+        {
+            'nombre': 'rfc',
+            'label': 'RFC',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'RFC',
+        },
+        {
+            'nombre': 'direccion',
+            'label': 'Direccion',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Direccion',
+            'filas': 3,
+        },
+        {
+            'nombre': 'nombre_contacto',
+            'label': 'Nombre del contacto',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del contacto',
+        },
+        {
+            'nombre': 'email_contacto',
+            'label': 'Email del contacto',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'medio',
+            'placeholder': 'Email del contacto',
+        },
+        {
+            'nombre': 'telefono_contacto',
+            'label': 'Telefono del contacto',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Telefono del contacto',
+        },
+        {
+            'nombre': 'activo',
+            'label': 'Activo',
+            'tipo': 'boolean',
+            'requerido': False,
+            'ancho': 'completo',
+            'label_check': 'Este cliente está activo',
+            'solo_editar': True,
+        },
+    ]
+
+@login_requerido
+def create_cliente(request):
+    print(f"CREATE USER - Method: {request.method}")
+    return form_crear(
+        request,
+        model=Cliente,
+        campos_def=get_campos_cliente(),
+        form_titulo='Nuevo cliente',
+        url_lista='reporte_clientes',
+    )
+
+@login_requerido
+def edit_cliente(request, pk):
+    return form_editar(
+        request,
+        model=Cliente,
+        pk=pk,
+        campos_def=get_campos_cliente(),
+        form_titulo='Editar cliente',
+        url_lista='reporte_clientes',
+    )
+
+@login_requerido
+def delete_cliente(request, pk):
+    return form_eliminar(request, Cliente, pk)

@@ -12,5 +12,6 @@ urlpatterns = [
     path('proyectos/crear/', views.proyecto_crear,   name='proyecto_crear'),
     path('proyectos/<int:pk>/editar/', views.proyecto_editar, name='proyecto_editar'),
     path('clientes/', views.reporte_clientes, name='reporte_clientes'),
+    path('clientes/crear/', views.create_cliente, name='create_cliente'),
     #path('proyectos/<int:pk>/eliminar/', views.proyecto_eliminar, name='proyecto_eliminar'),
 ]

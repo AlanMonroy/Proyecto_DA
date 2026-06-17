@@ -23,19 +23,12 @@ def get_form_campos(campos, objeto=None):
             ]
     return campos
 
-
 def form_crear(request, model, campos_def, form_titulo, url_lista,
                template_form='reportes/modal_form.html',
                template_lista=None, extra_context=None):
-    """
-    Vista genérica para crear un registro vía HTMX.
 
-    model:       clase del modelo Django
-    campos_def:  lista de dicts con la definición de campos
-    form_titulo: título del modal
-    url_lista:   nombre de la URL del reporte (para refrescar la tabla)
-    """
-    print(f"Method: {request.method}, Path: {request.path}")
+    # Filtrar campos solo_editar y solo_crear no aplica aquí
+    campos_def = [c for c in campos_def if not c.get('solo_editar')]
     campos = get_form_campos(campos_def)
 
     if request.method == 'POST':
@@ -47,42 +40,28 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             requerido = campo.get('requerido', False)
             tipo      = campo.get('tipo', 'text')
 
-            if campo.get('especial'): #caso de password
+            if campo.get('especial'):
                 continue
 
             valor = request.POST.get(nombre, '').strip()
 
-            if requerido and not valor:
+            if requerido and not valor and tipo != 'boolean':
                 errores[nombre] = 'Este campo es obligatorio.'
                 continue
 
-            # Convertir según tipo
             if tipo == 'boolean':
-                datos[nombre] = valor == 'true'
+                datos[nombre] = nombre in request.POST
             elif tipo in ('number', 'decimal') and valor:
                 try:
                     datos[nombre] = float(valor) if tipo == 'decimal' else int(valor)
                 except ValueError:
                     errores[nombre] = 'Valor numérico inválido.'
             elif tipo == 'select' and valor:
-                # Para ForeignKey pasamos el ID
                 campo_fk = campo.get('campo_fk', nombre)
-                datos[campo_fk] = valor
+                datos[campo_fk + '_id'] = valor
             elif valor:
                 datos[nombre] = valor
 
-        # ANTES
-        if not errores:
-            try:
-                obj = model(**datos)
-                obj.save()
-                response = HttpResponse(status=204)
-                response['HX-Trigger'] = 'refreshTabla'
-                return response
-            except Exception as e:
-                errores['__all__'] = str(e)
-
-        # DESPUÉS
         if not errores:
             p1 = request.POST.get('password1', '')
             p2 = request.POST.get('password2', '')
@@ -92,43 +71,43 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                 elif len(p1) < 8:
                     errores['password1'] = 'La contraseña debe tener al menos 8 caracteres.'
 
-            if not errores:
-                try:
-                    obj = model(**datos)
-                    if p1:
-                        obj.set_password(p1)
-                    obj.save()
-                    response = HttpResponse(status=204)
-                    response['HX-Trigger'] = 'refreshTabla'
-                    return response
-                except Exception as e:
-                    errores['__all__'] = str(e)
+        if not errores:
+            try:
+                obj = model(**datos)
+                if hasattr(obj, 'activo') and 'activo' not in datos:
+                    obj.activo = True  # ← default al crear
+                if p1:
+                    obj.set_password(p1)
+                obj.save()
+                response = HttpResponse(status=204)
+                response['HX-Trigger'] = 'refreshTabla'
+                return response
+            except Exception as e:
+                errores['__all__'] = str(e)
 
         print(f"Errores: {errores}")
 
-        # Si hay errores, re-renderiza el modal con errores
         context = {
             'form_titulo':  form_titulo,
             'form_campos':  campos,
             'form_action':  request.path,
             'objeto':       None,
             'errores':      errores,
+            'valores_post': request.POST,
             **(extra_context or {}),
         }
         return render(request, template_form, context)
 
-    # GET — mostrar modal
     context = {
-        'form_titulo': form_titulo,
-        'form_campos': campos,
-        'form_action': request.path,
-        'objeto':      None,
-        'errores':     {},
-        'valores_post': request.POST,  #guardar los valores llenados para no volver a llenar
+        'form_titulo':  form_titulo,
+        'form_campos':  campos,
+        'form_action':  request.path,
+        'objeto':       None,
+        'errores':      {},
+        'valores_post': {},
         **(extra_context or {}),
     }
     return render(request, template_form, context)
-
 
 def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                 template_form='reportes/modal_form.html',

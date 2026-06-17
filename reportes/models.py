@@ -101,6 +101,7 @@ class Cliente(models.Model):
     cliente_id = models.BigAutoField(primary_key=True)
     nombre_cliente = models.TextField()
     rfc = models.TextField()
+    direccion = models.TextField()
     nombre_contacto = models.TextField()
     email_contacto = models.TextField()
     telefono_contacto = models.TextField()
