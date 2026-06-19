@@ -42,6 +42,23 @@ class Refacciones(models.Model):
     def __str__(self):
         return self.nombre  # ← nombre es string, refaccion_id es entero
 
+class Cliente(models.Model):
+    cliente_id = models.BigAutoField(primary_key=True)
+    nombre_cliente = models.TextField()
+    rfc = models.TextField()
+    direccion = models.TextField()
+    nombre_contacto = models.TextField()
+    email_contacto = models.TextField()
+    telefono_contacto = models.TextField()
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'cliente'
+        managed = False
+
+    def __str__(self):
+        return self.nombre_cliente
+
 class Proyectos(models.Model):
     proyecto_id = models.BigAutoField(primary_key=True)
     nombre = models.TextField()
@@ -54,6 +71,12 @@ class Proyectos(models.Model):
         ProyectoEstatus,
         on_delete=models.PROTECT,
         db_column='estatus'
+    )
+
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.PROTECT,
+        db_column='cliente_id'
     )
 
     prioridad = models.ForeignKey(
@@ -96,20 +119,3 @@ class Proyectos(models.Model):
 
     def __str__(self):
         return self.nombre
-
-class Cliente(models.Model):
-    cliente_id = models.BigAutoField(primary_key=True)
-    nombre_cliente = models.TextField()
-    rfc = models.TextField()
-    direccion = models.TextField()
-    nombre_contacto = models.TextField()
-    email_contacto = models.TextField()
-    telefono_contacto = models.TextField()
-    activo = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = 'cliente'
-        managed = False
-
-    def __str__(self):
-        return self.nombre_cliente

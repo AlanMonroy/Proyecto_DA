@@ -174,7 +174,7 @@ def reporte_proyectos(request):
     page      = request.GET.get('page', 1)
 
     #qs = Proyectos.objects.all()
-    qs = Proyectos.objects.select_related('estatus', 'prioridad').all()
+    qs = Proyectos.objects.select_related('estatus', 'prioridad', 'cliente').all()
 
     if q:
         if columna == 'nombre':
@@ -213,7 +213,7 @@ def reporte_proyectos(request):
         {'campo': 'descripcion', 'label': 'Descripción', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'estatus', 'label': 'Estatus', 'tipo': 'color_badge', 'campo_color': 'color', 'ordenable': True},
         {'campo': 'prioridad', 'label': 'Prioridad', 'tipo': 'color_badge', 'campo_color': 'color', 'ordenable': True},
-        {'campo': 'cliente_id', 'label': 'Cliente', 'tipo': 'fk', 'ordenable': True},
+        {'campo': 'cliente', 'label': 'Cliente', 'tipo': 'fk', 'ordenable': True},
         {'campo': 'responsable_id', 'label': 'Responsable', 'tipo': 'fk', 'ordenable': True},
         {'campo': 'porcentaje_avance', 'label': 'Avance', 'tipo': 'porcentaje', 'ordenable': True},
         {'campo': 'cotizacion', 'label': 'Cotizacion', 'tipo': 'moneda', 'ordenable': True},
@@ -352,6 +352,15 @@ def get_campos_proyecto():
             'ancho': 'completo',
             'placeholder': 'Descripción del proyecto',
             'filas': 3,
+        },
+        {
+            'nombre': 'nombre_cliente',
+            'label': 'Cliente',
+            'tipo': 'select',
+            'campo_fk': 'cliente',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
         },
         {
             'nombre': 'estatus',
