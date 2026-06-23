@@ -51,6 +51,7 @@ class Cliente(models.Model):
     email_contacto = models.TextField()
     telefono_contacto = models.TextField()
     activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'cliente'

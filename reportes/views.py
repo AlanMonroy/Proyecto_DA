@@ -282,6 +282,7 @@ def reporte_clientes(request):
         'nombre_contacto',
         'email_contacto',
         'telefono_contacto',
+        'fecha_creacion'
     ]
     if orden in campos_validos:
         orden_str = f'-{orden}' if direccion == 'desc' else orden
