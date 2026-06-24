@@ -196,6 +196,7 @@ def reporte_proyectos(request):
         'fecha_fin',
         'fecha_creacion'
     ]
+
     if orden in campos_validos:
         orden_str = f'-{orden}' if direccion == 'desc' else orden
         qs = qs.order_by(orden_str)
@@ -250,7 +251,6 @@ def reporte_proyectos(request):
     }
 
     return render(request, 'reportes/reporte_base.html', context)
-
 
 @login_requerido
 def reporte_clientes(request):
@@ -355,7 +355,7 @@ def get_campos_proyecto():
             'filas': 3,
         },
         {
-            'nombre': 'nombre_cliente',
+            'nombre': 'cliente',
             'label': 'Cliente',
             'tipo': 'select',
             'campo_fk': 'cliente',
