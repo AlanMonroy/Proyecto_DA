@@ -120,3 +120,24 @@ class Proyectos(models.Model):
 
     def __str__(self):
         return self.nombre
+
+class ProyectoAsignacion(models.Model):
+    proyectos_asignacion_id    = models.BigAutoField(primary_key=True)
+    proyecto_id         = models.ForeignKey(
+        Proyectos,
+        on_delete=models.CASCADE,
+        db_column='proyecto_id'
+    )
+    usuario_id          = models.ForeignKey(
+        'users.Usuario',
+        on_delete=models.CASCADE,
+        db_column='user_id'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'proyectos_asignacion'
+        managed  = False
+
+    def __str__(self):
+        return f'{self.proyecto} — {self.usuario}'

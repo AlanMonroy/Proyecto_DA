@@ -155,6 +155,22 @@
             <span>{{ campo.label_check|default:campo.label }}</span>
             </label>
 
+        <!-- MULTISELECT -->
+        {% elif campo.tipo == 'multiselect' %}
+          <div class="multiselect-wrap">
+            {% for opcion in campo.opciones %}
+            <label class="multiselect-opcion">
+              <input
+                type="checkbox"
+                name="{{ campo.nombre }}"
+                value="{{ opcion.valor }}"
+                {% if opcion.valor in campo.valores_actuales %}checked{% endif %}
+              />
+              <span>{{ opcion.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
           <!-- COLOR -->
           {% elif campo.tipo == 'color' %}
             <div class="color-field-wrap">

@@ -5,7 +5,7 @@ from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -442,6 +442,20 @@ def get_campos_proyecto():
             'ancho': 'completo',
             'label_check': 'Este proyecto está activo',
         },
+        {
+            'nombre': 'usuarios_asignados',
+            'label': 'Usuarios asignados',
+            'tipo': 'multiselect',
+            'requerido': False,
+            'ancho': 'completo',
+            'solo_editar': True,
+            'especial': True,
+            'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
+            'campo_obj': 'proyecto_id',  # ← campo del proyecto
+            'campo_rel': 'usuario_id',  # ← campo del usuario
+            'queryset': Usuario.objects.all(),
+            'queryset_actual': None,
+        },
     ]
 
 @login_requerido
@@ -456,11 +470,25 @@ def proyecto_crear(request):
 
 @login_requerido
 def proyecto_editar(request, pk):
-    return form_editar(
+    """return form_editar(
         request,
         model=Proyectos,
         pk=pk,
         campos_def=get_campos_proyecto(),
+        form_titulo='Editar Proyecto',
+        url_lista='reporte_proyectos',
+    )"""
+    campos = get_campos_proyecto()
+    for campo in campos:
+        if campo['nombre'] == 'usuarios_asignados':
+            campo['queryset_actual'] = ProyectoAsignacion.objects.filter(proyecto_id=pk).values_list('usuario_id',
+                                                                                                     flat=True)
+
+    return form_editar(
+        request,
+        model=Proyectos,
+        pk=pk,
+        campos_def=campos,
         form_titulo='Editar Proyecto',
         url_lista='reporte_proyectos',
     )
