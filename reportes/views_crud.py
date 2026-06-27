@@ -21,16 +21,17 @@ def get_form_campos(campos, objeto=None):
                 {'valor': str(obj.pk), 'label': str(obj)}
                 for obj in qs
             ]
-        if campo.get('tipo') == 'multiselect' and 'queryset' in campo:
+        if campo.get('tipo') in ('lov') and 'queryset' in campo:
             qs = campo['queryset']
             campo['opciones'] = [
                 {'valor': str(obj.pk), 'label': str(obj)}
                 for obj in qs
             ]
-            # Cargar valores actuales si hay objeto
-            if objeto and 'queryset_actual' in campo:
+            if objeto and 'queryset_actual' in campo and campo['queryset_actual'] is not None:
+                actuales_pks = list(campo['queryset_actual'])
                 campo['valores_actuales'] = [
-                    str(pk) for pk in campo['queryset_actual'].values_list('pk', flat=True)
+                    {'valor': str(obj.pk), 'label': str(obj)}
+                    for obj in qs if obj.pk in actuales_pks
                 ]
             else:
                 campo['valores_actuales'] = []

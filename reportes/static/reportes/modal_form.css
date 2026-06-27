@@ -5,6 +5,7 @@
   text-align: left;
   padding: 0;
   max-height: 90vh;
+  height: 90vh;
   display: flex;
   flex-direction: column;
 }
@@ -42,6 +43,8 @@
   padding: 1.5rem 1.75rem;
   overflow-y: auto;
   flex: 1;
+  max-height: calc(90vh - 130px);
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
@@ -135,6 +138,103 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+/* ─── LOV ────────────────────────────────────────────────── */
+.lov-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lov-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 32px;
+}
+
+.lov-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--brand-dark);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.lov-tag button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.lov-tag button:hover { color: #fff; }
+
+.lov-input-wrap {
+  position: relative;
+}
+
+.lov-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color var(--trans), box-shadow var(--trans);
+}
+
+.lov-input:focus {
+  border-color: var(--brand-dark);
+  box-shadow: 0 0 0 3px rgba(26,26,46,0.07);
+}
+
+.lov-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.lov-dropdown.visible { display: block; }
+
+.lov-opcion {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lov-opcion:hover { background: #f5f0e8; }
+
+.lov-opcion.ya-seleccionado {
+  color: var(--ink-muted);
+  pointer-events: none;
+  background: #faf8f4;
+}
+
+.lov-opcion.oculto { display: none; }
 
 /* Color field */
 .color-field-wrap {

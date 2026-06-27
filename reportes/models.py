@@ -128,11 +128,17 @@ class ProyectoAsignacion(models.Model):
         on_delete=models.CASCADE,
         db_column='proyecto_id'
     )
-    usuario_id          = models.ForeignKey(
+    """usuario_id          = models.ForeignKey(
         'users.Usuario',
         on_delete=models.CASCADE,
         db_column='user_id'
-    )
+    )"""
+
+    empleado = models.ForeignKey(
+            'users.Usuario',
+            on_delete=models.CASCADE,
+            db_column='empleado_id'
+        )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

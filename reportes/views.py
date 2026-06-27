@@ -445,14 +445,14 @@ def get_campos_proyecto():
         {
             'nombre': 'usuarios_asignados',
             'label': 'Usuarios asignados',
-            'tipo': 'multiselect',
+            'tipo': 'lov',
             'requerido': False,
             'ancho': 'completo',
             'solo_editar': True,
             'especial': True,
             'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
             'campo_obj': 'proyecto_id',  # ← campo del proyecto
-            'campo_rel': 'usuario_id',  # ← campo del usuario
+            'campo_rel': 'empleado_id',  # ← campo del usuario
             'queryset': Usuario.objects.all(),
             'queryset_actual': None,
         },
@@ -481,7 +481,7 @@ def proyecto_editar(request, pk):
     campos = get_campos_proyecto()
     for campo in campos:
         if campo['nombre'] == 'usuarios_asignados':
-            campo['queryset_actual'] = ProyectoAsignacion.objects.filter(proyecto_id=pk).values_list('usuario_id',
+            campo['queryset_actual'] = ProyectoAsignacion.objects.filter(proyecto_id=pk).values_list('empleado_id',
                                                                                                      flat=True)
 
     return form_editar(
@@ -540,7 +540,7 @@ def get_campos_usuario():
             'nombre': 'rol',
             'label': 'Rol',
             'tipo': 'select',
-            'campo_fk': 'rol_id',
+            'campo_fk': 'rol',
             'requerido': True,
             'ancho': 'medio',
             'queryset': Rol.objects.order_by('rol_id'),

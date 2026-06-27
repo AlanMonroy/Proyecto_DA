@@ -155,20 +155,42 @@
             <span>{{ campo.label_check|default:campo.label }}</span>
             </label>
 
-        <!-- MULTISELECT -->
-        {% elif campo.tipo == 'multiselect' %}
-          <div class="multiselect-wrap">
-            {% for opcion in campo.opciones %}
-            <label class="multiselect-opcion">
+        <!-- LOV - List of Values con búsqueda -->
+        {% elif campo.tipo == 'lov' %}
+          <div class="lov-wrap" id="lov-{{ campo.nombre }}">
+            <!-- Tags de seleccionados -->
+            <div class="lov-tags" id="lov-tags-{{ campo.nombre }}">
+              {% for val in campo.valores_actuales %}
+                <span class="lov-tag" data-valor="{{ val.valor }}">
+                  {{ val.label }}
+                  <button type="button" onclick="lovRemove('{{ campo.nombre }}', '{{ val.valor }}', this)">×</button>
+                  <input type="hidden" name="{{ campo.nombre }}" value="{{ val.valor }}" />
+                </span>
+              {% endfor %}
+            </div>
+            <!-- Input de búsqueda -->
+            <div class="lov-input-wrap">
               <input
-                type="checkbox"
-                name="{{ campo.nombre }}"
-                value="{{ opcion.valor }}"
-                {% if opcion.valor in campo.valores_actuales %}checked{% endif %}
+                type="text"
+                class="lov-input"
+                placeholder="{{ campo.placeholder|default:'Buscar...' }}"
+                autocomplete="off"
+                oninput="lovBuscar('{{ campo.nombre }}', this.value, {{ campo.opciones|length }})"
+                onfocus="lovBuscar('{{ campo.nombre }}', this.value, {{ campo.opciones|length }})"
               />
-              <span>{{ opcion.label }}</span>
-            </label>
-            {% endfor %}
+              <!-- Dropdown de sugerencias -->
+              <div class="lov-dropdown" id="lov-dropdown-{{ campo.nombre }}">
+                {% for opcion in campo.opciones %}
+                  <div class="lov-opcion"
+                       data-valor="{{ opcion.valor }}"
+                       data-label="{{ opcion.label }}"
+                       data-nombre="{{ campo.nombre }}"
+                       onclick="lovSeleccionar('{{ campo.nombre }}', '{{ opcion.valor }}', '{{ opcion.label }}', this)">
+                    {{ opcion.label }}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
           </div>
 
           <!-- COLOR -->
