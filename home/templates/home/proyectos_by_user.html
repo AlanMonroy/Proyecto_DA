@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Proyectos asignados{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+PROYECTOS DEL USUARIO
+<!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="pagina-header">
+        <div class="reporte-header-left">
+            <p class="reporte-breadcrumb">{{ reporte_breadcrumb|default:"Inicio / Proyectos Asignados" }}</p>
+            <h1 class="reporte-titulo">Proyectos asignados</h1>
+            <p class="reporte-subtitulo">{{ reporte_subtitulo|default:"" }}</p>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'home/js/home.js' %}"></script>
+{% endblock %}

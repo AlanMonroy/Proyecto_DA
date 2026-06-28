@@ -123,7 +123,7 @@ class Proyectos(models.Model):
 
 class ProyectoAsignacion(models.Model):
     proyectos_asignacion_id    = models.BigAutoField(primary_key=True)
-    proyecto_id         = models.ForeignKey(
+    proyecto = models.ForeignKey(
         Proyectos,
         on_delete=models.CASCADE,
         db_column='proyecto_id'

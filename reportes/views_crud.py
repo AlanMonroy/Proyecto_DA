@@ -21,7 +21,7 @@ def get_form_campos(campos, objeto=None):
                 {'valor': str(obj.pk), 'label': str(obj)}
                 for obj in qs
             ]
-        if campo.get('tipo') in ('lov') and 'queryset' in campo:
+        if campo.get('tipo') == 'lov' and 'queryset' in campo:
             qs = campo['queryset']
             campo['opciones'] = [
                 {'valor': str(obj.pk), 'label': str(obj)}
@@ -141,6 +141,9 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
             requerido = campo.get('requerido', False)
             tipo      = campo.get('tipo', 'text')
 
+            if campo.get('especial'):
+                continue
+
             valor = request.POST.get(nombre, '').strip()
 
             if requerido and not valor:
@@ -166,24 +169,28 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
             try:
                 objeto.save()
 
-                # Guardar multiselect
+                # Guardar lov
                 for campo in campos:
-                    if campo.get('tipo') == 'multiselect' and campo.get('especial'):
+                    if campo.get('tipo') == 'lov' and campo.get('especial'):
                         nombre = campo['nombre']
-                        valores = request.POST.getlist(nombre)  # ← getlist para múltiples valores
+                        valores = request.POST.getlist(nombre)
                         modelo_rel = campo.get('modelo_rel')
                         campo_obj = campo.get('campo_obj')
                         campo_rel = campo.get('campo_rel')
 
+                        print(f"LOV - nombre: {nombre}, valores: {valores}, modelo_rel: {modelo_rel}")
+
                         if modelo_rel and campo_obj and campo_rel:
-                            # Eliminar asignaciones actuales
-                            modelo_rel.objects.filter(**{campo_obj: objeto.pk}).delete()
-                            # Crear nuevas asignaciones
-                            for valor in valores:
-                                modelo_rel.objects.create(**{
-                                    campo_obj: objeto.pk,
-                                    campo_rel: valor
-                                })
+                            try:
+                                modelo_rel.objects.filter(**{campo_obj + '_id': objeto.pk}).delete()
+                                for valor in valores:
+                                    obj_creado = modelo_rel.objects.create(**{
+                                        campo_obj + '_id': objeto.pk,
+                                        campo_rel + '_id': valor
+                                    })
+                                    print(f"Creado: {obj_creado}")
+                            except Exception as e:
+                                print(f"Error LOV: {e}")
 
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'

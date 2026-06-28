@@ -451,8 +451,8 @@ def get_campos_proyecto():
             'solo_editar': True,
             'especial': True,
             'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
-            'campo_obj': 'proyecto_id',  # ← campo del proyecto
-            'campo_rel': 'empleado_id',  # ← campo del usuario
+            'campo_obj': 'proyecto',  # ← campo del proyecto
+            'campo_rel': 'empleado',  # ← campo del usuario
             'queryset': Usuario.objects.all(),
             'queryset_actual': None,
         },

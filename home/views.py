@@ -16,4 +16,10 @@ def home_user(request):
     # Solo rol 1 puede entrar aquí
     if request.session.get('usuario_rol') != 1:
         return redirect('home-admin')
-    return render(request, 'home/home_user.html')
+    return render(request, 'home/home_admin.html')
+
+@login_requerido
+def proyectos_by_user(request):
+    if request.session.get('usuario_rol') != 1:
+        return redirect('home-user')
+    return render(request, 'home/proyectos_by_user.html')
