@@ -8,15 +8,22 @@
 {% endblock %}
 
 {% block content %}
-
-PROYECTOS DEL USUARIO
-<!-- ── Encabezado ─────────────────────────────────────── -->
+    <!-- ── Encabezado ─────────────────────────────────────── -->
     <div class="pagina-header">
-        <div class="reporte-header-left">
-            <p class="reporte-breadcrumb">{{ reporte_breadcrumb|default:"Inicio / Proyectos Asignados" }}</p>
-            <h1 class="reporte-titulo">Proyectos asignados</h1>
-            <p class="reporte-subtitulo">{{ reporte_subtitulo|default:"" }}</p>
+        <div class="pagina-header-left">
+            <p class="pagina-breadcrumb">{{ reporte_breadcrumb|default:"Inicio / Proyectos Asignados" }}</p>
+            <h1 class="pagina-titulo">Proyectos asignados</h1>
         </div>
+    </div>
+
+    <div class="opciones">
+        {% for r in registros %}
+          <div>
+            Proyecto: <b>{{ r.proyecto }}</b>
+            Horas registradas: <b>{{ r.horas }}</b>
+            Días faltantes: <b>{% if r.dias_faltantes is not None %}{{ r.dias_faltantes }}{% else %}Sin fecha{% endif %}</b>
+          </div>
+        {% endfor %}
     </div>
 
 {% endblock %}

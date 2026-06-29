@@ -128,17 +128,13 @@ class ProyectoAsignacion(models.Model):
         on_delete=models.CASCADE,
         db_column='proyecto_id'
     )
-    """usuario_id          = models.ForeignKey(
-        'users.Usuario',
-        on_delete=models.CASCADE,
-        db_column='user_id'
-    )"""
 
     empleado = models.ForeignKey(
-            'users.Usuario',
-            on_delete=models.CASCADE,
-            db_column='empleado_id'
-        )
+        'users.Usuario',
+        on_delete=models.CASCADE,
+        db_column='empleado_id'
+    )
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -147,3 +143,33 @@ class ProyectoAsignacion(models.Model):
 
     def __str__(self):
         return f'{self.proyecto} — {self.usuario}'
+
+
+class ProyectosActividades(models.Model):
+    proyectos_actividades_id = models.BigAutoField(primary_key=True)
+    proyecto = models.ForeignKey(
+        Proyectos,
+        on_delete=models.CASCADE,
+        db_column='proyecto_id'
+    )
+
+    empleado = models.ForeignKey(
+        'users.Usuario',
+        on_delete=models.CASCADE,
+        db_column='empleado_id'
+    )
+
+    actividad_realizada = models.TextField(null=True, blank=True)
+    horas = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+    )
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'proyectos_actividades'
+        managed = False
+
+    def __str__(self):
+        return self.actividad_realizada

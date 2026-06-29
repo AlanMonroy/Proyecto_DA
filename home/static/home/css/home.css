@@ -4,6 +4,31 @@
   margin: 0 auto;
 }
 
+.pagina-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagina-breadcrumb {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.3rem;
+}
+
+.pagina-titulo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.9rem;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+@media (max-width: 768px) {
+  .pagina-header {flex-direction: column; align-items: flex-start;}
+}
+
 /* ─── Header ─────────────────────────────────────────────── */
 .dashboard-header {
   margin-bottom: 2.5rem;
