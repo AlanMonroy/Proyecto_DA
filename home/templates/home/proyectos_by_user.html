@@ -4,26 +4,98 @@
 {% block title %}Proyectos asignados{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'home/css/proyectos_by_user.css' %}">
 {% endblock %}
 
 {% block content %}
-    <!-- ── Encabezado ─────────────────────────────────────── -->
-    <div class="pagina-header">
-        <div class="pagina-header-left">
-            <p class="pagina-breadcrumb">{{ reporte_breadcrumb|default:"Inicio / Proyectos Asignados" }}</p>
-            <h1 class="pagina-titulo">Proyectos asignados</h1>
-        </div>
+<!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="pagina-header" style="margin-bottom: 1.5rem;">
+      <div class="pagina-header-left">
+        <p class="pagina-breadcrumb">{{ reporte_breadcrumb|default:"Inicio / Proyectos Asignados" }}</p>
+        <h1 class="pagina-titulo">Proyectos asignados</h1>
+      </div>
     </div>
 
-    <div class="opciones">
-        {% for r in registros %}
-          <div>
-            Proyecto: <b>{{ r.proyecto }}</b>
-            Horas registradas: <b>{{ r.horas }}</b>
-            Días faltantes: <b>{% if r.dias_faltantes is not None %}{{ r.dias_faltantes }}{% else %}Sin fecha{% endif %}</b>
+    <!-- ── Grid de proyectos ──────────────────────────────── -->
+    <div class="proyectos-grid">
+      {% for r in registros %}
+
+      {% with proyecto=r.proyecto %}
+      <div class="proyecto-card">
+
+        <!-- Barra de color según prioridad -->
+        <div class="proyecto-card-barra prioridad-{{ proyecto.prioridad.nombre|slugify }}"></div>
+
+        <div class="proyecto-card-body">
+
+          <!-- Nombre y estatus -->
+          <div class="proyecto-card-header">
+            <span class="proyecto-card-nombre">{{ proyecto.nombre }}</span>
+            <!--<span class="proyecto-card-estatus"
+                  style="background: {{ proyecto.estatus.color|default:'#6b6b6b' }}20;
+                         color: {{ proyecto.estatus.color|default:'#6b6b6b' }};
+                         border: 1px solid {{ proyecto.estatus.color|default:'#6b6b6b' }};">
+              {{ proyecto.estatus }}
+            </span>-->
+            <span class="proyecto-card-estatus estatus-{{ proyecto.estatus.nombre|slugify }}">
+              {{ proyecto.estatus }}
+            </span>
           </div>
-        {% endfor %}
+
+          <!-- Stats: horas y días faltantes -->
+          <div class="proyecto-card-stats">
+            <div class="proyecto-stat">
+              <span class="proyecto-stat-valor">{{ r.horas }}</span>
+              <span class="proyecto-stat-label">Horas registradas</span>
+            </div>
+            <div class="proyecto-stat
+              {% if r.dias_faltantes is not None %}
+                {% if r.dias_faltantes < 0 %}vencido
+                {% elif r.dias_faltantes <= 7 %}urgente
+                {% elif r.dias_faltantes <= 30 %}proximo
+                {% else %}ok{% endif %}
+              {% endif %}">
+              <span class="proyecto-stat-valor">
+                {% if r.dias_faltantes is not None %}
+                  {% if r.dias_faltantes < 0 %}Vencido
+                  {% else %}{{ r.dias_faltantes }}{% endif %}
+                {% else %}—{% endif %}
+              </span>
+              <span class="proyecto-stat-label">
+                {% if r.dias_faltantes is not None and r.dias_faltantes >= 0 %}
+                  Días restantes
+                {% elif r.dias_faltantes is not None %}
+                  Días vencido
+                {% else %}
+                  Sin fecha fin
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Barra de avance -->
+          <div class="proyecto-card-avance">
+            <div class="proyecto-avance-label">
+              <span>Avance</span>
+              <span>{{ proyecto.porcentaje_avance }}%</span>
+            </div>
+            <div class="proyecto-avance-barra">
+              <div class="proyecto-avance-fill"
+                   style="width: {{ proyecto.porcentaje_avance }}%;
+                          background: {{ proyecto.prioridad.color|default:'#1a1a2e' }};"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      {% endwith %}
+
+      {% empty %}
+      <div class="proyectos-vacio">
+        No tienes proyectos asignados.
+      </div>
+      {% endfor %}
     </div>
 
 {% endblock %}
