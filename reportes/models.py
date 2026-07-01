@@ -92,7 +92,7 @@ class Proyectos(models.Model):
         default=0
     )
 
-    cotizacion = models.DecimalField(
+    precio_venta = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         null=True,

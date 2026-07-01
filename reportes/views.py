@@ -217,7 +217,7 @@ def reporte_proyectos(request):
         {'campo': 'cliente', 'label': 'Cliente', 'tipo': 'fk', 'ordenable': True},
         {'campo': 'responsable_id', 'label': 'Responsable', 'tipo': 'fk', 'ordenable': True},
         {'campo': 'porcentaje_avance', 'label': 'Avance', 'tipo': 'porcentaje', 'ordenable': True},
-        {'campo': 'cotizacion', 'label': 'Cotizacion', 'tipo': 'moneda', 'ordenable': True},
+        {'campo': 'precio_venta', 'label': 'Precio de venta', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'costo_real', 'label': 'Costo', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'tipo_proyecto', 'label': 'Tipo Proyecto', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'categoria', 'label': 'Categoria', 'tipo': 'texto', 'ordenable': True},
