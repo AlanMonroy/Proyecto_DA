@@ -173,3 +173,28 @@ class ProyectosActividades(models.Model):
 
     def __str__(self):
         return self.actividad_realizada
+
+class Costos(models.Model):
+    costo_id = models.BigAutoField(primary_key=True)
+    proyecto = models.ForeignKey(
+        Proyectos,
+        on_delete=models.CASCADE,
+        db_column='proyecto_id'
+    )
+    nombre = models.TextField(null=True, blank=True)
+    descripcion = models.TextField(null=True, blank=True)
+
+    costo = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+    )
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'costos'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
+

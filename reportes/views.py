@@ -5,7 +5,7 @@ from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -391,8 +391,8 @@ def get_campos_proyecto():
             'max': 100,
         },
         {
-            'nombre': 'cotizacion',
-            'label': 'Cotización',
+            'nombre': 'precio_venta',
+            'label': 'Precio de venta',
             'tipo': 'decimal',
             'requerido': False,
             'ancho': 'medio',
@@ -662,3 +662,136 @@ def edit_cliente(request, pk):
 @login_requerido
 def delete_cliente(request, pk):
     return form_eliminar(request, Cliente, pk)
+
+#-----------COSTOS------------#
+@login_requerido
+def reporte_costos(request):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'costo_id')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = Costos.objects.all()
+
+    if q:
+        if columna == 'nombre':
+            qs = qs.filter(nombre_icontains=q)
+        else:
+            qs = qs.filter(
+                Q(nombre_icontains=q)
+            )
+
+    campos_validos = [
+        'costo_id',
+        'proyecto',
+        'nombre',
+        'descripcion',
+        'costo',
+        'fecha_creacion'
+    ]
+    if orden in campos_validos:
+        orden_str = f'-{orden}'
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'costo_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'nombre', 'label': 'Nombre', 'RFC': 'texto', 'ordenable': True},
+        {'campo': 'descripcion', 'label': 'Descripcion', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'costo', 'label': 'Costo', 'tipo': 'moneda', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'Proyecto', 'label': 'Proyecto'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Costos',
+        'reporte_subtitulo':   'Gestión de costos',
+        'reporte_breadcrumb':  'Inicio / Costos',
+        'puede_crear':         request.session.get('usuario_rol') == 0,
+        'puede_editar':        request.session.get('usuario_rol') == 0,
+        'puede_eliminar':      request.session.get('usuario_rol') == 0,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/costos/crear/',
+        'btn_crear_texto':     'Nuevo Costo',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)
+
+def get_campos_costos():
+    return [
+        {
+            'nombre': 'proyecto',
+            'label': 'Proyecto',
+            'tipo': 'select',
+            'campo_fk': 'proyecto',
+            'requerido': True,
+            'ancho': 'completo',
+            'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
+        },
+        {
+            'nombre': 'nombre', #nombre en el models
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del costo',
+        },
+        {
+            'nombre': 'descripcion',
+            'label': 'Descripcion',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Descripcion del costo',
+        },
+        {
+            'nombre': 'costo',
+            'label': 'Costo Monetario',
+            'tipo': 'decimal',
+            'requerido': True,
+            'ancho': 'medio',
+        },
+    ]
+
+@login_requerido
+def create_costo(request):
+    return form_crear(
+        request,
+        model=Costos,
+        campos_def=get_campos_costos(),
+        form_titulo='Nuevo costo',
+        url_lista='reporte_costos',
+    )
+
+@login_requerido
+def edit_costo(request, pk):
+    return form_editar(
+        request,
+        model=Costos,
+        pk=pk,
+        campos_def=get_campos_costos(),
+        form_titulo='Editar cosot',
+        url_lista='reporte_costos',
+    )
+
+@login_requerido
+def delete_costo(request, pk):
+    return form_eliminar(request, Costos, pk)
