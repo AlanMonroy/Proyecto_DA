@@ -185,7 +185,7 @@ class Costos(models.Model):
     descripcion = models.TextField(null=True, blank=True)
 
     costo = models.DecimalField(
-        max_digits=5,
+        max_digits=10,
         decimal_places=2,
     )
 

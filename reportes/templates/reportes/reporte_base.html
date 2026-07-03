@@ -170,6 +170,8 @@
                 {{ valor|date:"d/m/Y H:i" }}
               {% elif col.tipo == 'moneda' %}
                 ${{ valor|floatformat:2 }}
+              {% elif col.tipo == 'numero' %}
+                {{ valor|floatformat:2 }}
               {% elif col.tipo == 'porcentaje' %}
                 {% if valor is not None %}{{ valor|floatformat:0 }}%{% else %}0%{% endif %}
               {% elif col.tipo == 'color_badge' %}
