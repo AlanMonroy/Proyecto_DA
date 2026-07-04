@@ -198,3 +198,22 @@ class Costos(models.Model):
     def __str__(self):
         return self.nombre
 
+class Productos(models.Model):
+    producto_id = models.BigAutoField(primary_key=True)
+    nombre = models.TextField(null=True, blank=True)
+    modelo = models.TextField(null=True, blank=True)
+    descripcion = models.TextField(null=True, blank=True)
+    costo = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'productos'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
+

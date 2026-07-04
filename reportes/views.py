@@ -5,7 +5,7 @@ from django.db.models.functions import Abs
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -470,7 +470,7 @@ def reporte_clientes(request):
     columnas = [
         {'campo': 'cliente_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre_cliente', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
-        {'campo': 'rfc', 'label': 'Descripción', 'RFC': 'texto', 'ordenable': True},
+        {'campo': 'rfc', 'label': 'RFC', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'direccion', 'label': 'Direccion', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre_contacto', 'label': 'Contacto - Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'email_contacto', 'label': 'Contacto - Email', 'tipo': 'texto', 'ordenable': True},
@@ -714,7 +714,7 @@ def reporte_costos(request):
     columnas = [
         {'campo': 'costo_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
-        {'campo': 'nombre', 'label': 'Nombre', 'RFC': 'texto', 'ordenable': True},
+        {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'descripcion', 'label': 'Descripcion', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'costo', 'label': 'Costo', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
@@ -797,10 +797,143 @@ def edit_costo(request, pk):
         model=Costos,
         pk=pk,
         campos_def=get_campos_costos(),
-        form_titulo='Editar cosot',
+        form_titulo='Editar costo',
         url_lista='reporte_costos',
     )
 
 @login_requerido
 def delete_costo(request, pk):
     return form_eliminar(request, Costos, pk)
+
+#-----------PRODUCTOS------------#
+@login_requerido
+def reporte_productos(request):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'producto_id')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = Productos.objects.all()
+
+    if q:
+        if columna == 'nombre':
+            qs = qs.filter(nombre_icontains=q)
+        else:
+            qs = qs.filter(
+                Q(nombre_icontains=q)
+            )
+
+    campos_validos = [
+        'producto_id',
+        'nombre',
+        'modelo',
+        'descripcion',
+        'costo',
+        'fecha_creacion'
+    ]
+
+    if orden in campos_validos:
+        orden_str = f'-{orden}'
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'producto_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'modelo', 'label': 'Modelo', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'descripcion', 'label': 'Descripcion', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'costo', 'label': 'Costo', 'tipo': 'moneda', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'nombre', 'label': 'Nombre'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Productos',
+        'reporte_subtitulo':   'Gestión de productos',
+        'reporte_breadcrumb':  'Inicio / Productos',
+        'puede_crear':         request.session.get('usuario_rol') == 0,
+        'puede_editar':        request.session.get('usuario_rol') == 0,
+        'puede_eliminar':      request.session.get('usuario_rol') == 0,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/productos/crear/',
+        'btn_crear_texto':     'Nuevo Producto',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)
+
+def get_campos_productos():
+    return [
+        {
+            'nombre': 'nombre',
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del producto',
+        },
+        {
+            'nombre': 'modelo',
+            'label': 'Modelo',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Modelo del producto',
+        },
+        {
+            'nombre': 'descripcion',
+            'label': 'Descripcion',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Descripcion del producto',
+        },
+        {
+            'nombre': 'costo',
+            'label': 'Costo del producto',
+            'tipo': 'decimal',
+            'requerido': True,
+            'ancho': 'medio',
+        },
+    ]
+
+@login_requerido
+def create_producto(request):
+    return form_crear(
+        request,
+        model=Productos,
+        campos_def=get_campos_productos(),
+        form_titulo='Nuevo producto',
+        url_lista='reporte_productos',
+    )
+
+@login_requerido
+def edit_producto(request, pk):
+    return form_editar(
+        request,
+        model=Productos,
+        pk=pk,
+        campos_def=get_campos_productos(),
+        form_titulo='Editar producto',
+        url_lista='reporte_productos',
+    )
+
+@login_requerido
+def delete_producto(request, pk):
+    return form_eliminar(request, Productos, pk)
