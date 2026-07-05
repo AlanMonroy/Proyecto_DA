@@ -207,7 +207,6 @@ class Productos(models.Model):
         max_digits=10,
         decimal_places=2,
     )
-
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -220,7 +219,10 @@ class Productos(models.Model):
 class Cotizaciones(models.Model):
     cotizacion_id = models.BigAutoField(primary_key=True)
     nombre = models.TextField(null=True, blank=True)
-
+    margen = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -229,4 +231,27 @@ class Cotizaciones(models.Model):
 
     def __str__(self):
         return self.nombre
+
+class CotizacionProductos(models.Model):
+    cotizacion_producto_id = models.BigAutoField(primary_key=True)
+    cotizacion = models.ForeignKey(
+        Cotizaciones,
+        on_delete=models.CASCADE,
+        db_column='cotizacion_id'
+    )
+    producto = models.ForeignKey(
+        Productos,
+        on_delete=models.CASCADE,
+        db_column='producto_id'
+    )
+    cantidad = models.DecimalField(max_digits=10, decimal_places=0)
+    importacion = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'cotizacion_productos'
+        managed = False
+
+    def __str__(self):
+        return f'{self.producto} x {self.cantidad}'
 

@@ -5,7 +5,7 @@ from django.db.models.functions import Abs
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -397,14 +397,6 @@ def proyecto_crear(request):
 
 @login_requerido
 def proyecto_editar(request, pk):
-    """return form_editar(
-        request,
-        model=Proyectos,
-        pk=pk,
-        campos_def=get_campos_proyecto(),
-        form_titulo='Editar Proyecto',
-        url_lista='reporte_proyectos',
-    )"""
     campos = get_campos_proyecto()
     for campo in campos:
         if campo['nombre'] == 'usuarios_asignados':
@@ -424,6 +416,7 @@ def proyecto_editar(request, pk):
 def proyecto_eliminar(request, pk):
     return form_eliminar(request, Proyectos, pk)
 
+#-------------CLIENTES-------------#
 @login_requerido
 def reporte_clientes(request):
 
@@ -937,3 +930,107 @@ def edit_producto(request, pk):
 @login_requerido
 def delete_producto(request, pk):
     return form_eliminar(request, Productos, pk)
+
+#-----------COTIZACIONES------------#
+@login_requerido
+def reporte_cotizaciones(request):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'cotizacion_id')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = Cotizaciones.objects.all()
+
+    if q:
+        if columna == 'nombre':
+            qs = qs.filter(nombre_icontains=q)
+        else:
+            qs = qs.filter(
+                Q(nombre_icontains=q)
+            )
+
+    campos_validos = [
+        'cotizacion_id',
+        'nombre',
+        'fecha_creacion'
+    ]
+
+    if orden in campos_validos:
+        orden_str = f'-{orden}'
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'nombre', 'label': 'Nombre'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Cotizaciones',
+        'reporte_subtitulo':   'Gestión de cotizaciones',
+        'reporte_breadcrumb':  'Inicio / Cotizaciones',
+        'puede_crear':         request.session.get('usuario_rol') == 0,
+        'puede_editar':        request.session.get('usuario_rol') == 0,
+        'puede_eliminar':      request.session.get('usuario_rol') == 0,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/cotizaciones/crear/',
+        'btn_crear_texto':     'Nueva Cotizacion',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)
+
+def get_campos_cotizaciones():
+    return [
+        {
+            'nombre': 'nombre',
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre de la cotizacion',
+        },
+    ]
+
+@login_requerido
+def create_cotizacion(request):
+    return form_crear(
+        request,
+        model=Cotizaciones,
+        campos_def=get_campos_cotizaciones(),
+        form_titulo='Nueva cotizacion',
+        url_lista='reporte_cotizaciones',
+    )
+
+@login_requerido
+def edit_cotizacion(request, pk):
+    return form_editar(
+        request,
+        model=Productos,
+        pk=pk,
+        campos_def=get_campos_cotizaciones(),
+        form_titulo='Editar cotizacion',
+        url_lista='reporte_cotizaciones',
+    )
+
+@login_requerido
+def delete_cotizacion(request, pk):
+    return form_eliminar(request, Cotizaciones, pk)

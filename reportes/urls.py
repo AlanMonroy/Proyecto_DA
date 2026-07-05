@@ -22,5 +22,9 @@ urlpatterns = [
     path('productos/crear/', views.create_producto, name='create_producto'),
     path('productos/<int:pk>/editar/', views.edit_producto, name='edit_producto'),
     path('productos/<int:pk>/eliminar/', views.delete_producto, name='delete_producto'),
+    path('cotizaciones/', views.reporte_cotizaciones, name='reporte_cotizaciones'),
+    path('cotizaciones/crear/', views.create_cotizacion, name='create_cotizacion'),
+    path('cotizaciones/<int:pk>/editar/', views.edit_cotizacion, name='edit_cotizacion'),
+    path('cotizaciones/<int:pk>/eliminar/', views.delete_cotizacion, name='delete_cotizacion'),
     #path('proyectos/<int:pk>/eliminar/', views.proyecto_eliminar, name='proyecto_eliminar'),
 ]
