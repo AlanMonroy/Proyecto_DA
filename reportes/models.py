@@ -217,3 +217,16 @@ class Productos(models.Model):
     def __str__(self):
         return self.nombre
 
+class Cotizaciones(models.Model):
+    cotizacion_id = models.BigAutoField(primary_key=True)
+    nombre = models.TextField(null=True, blank=True)
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'cotizaciones'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
+
