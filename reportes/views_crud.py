@@ -21,6 +21,7 @@ def get_form_campos(campos, objeto=None):
                 {'valor': str(obj.pk), 'label': str(obj)}
                 for obj in qs
             ]
+
         if campo.get('tipo') == 'lov' and 'queryset' in campo:
             qs = campo['queryset']
             campo['opciones'] = [
@@ -36,13 +37,39 @@ def get_form_campos(campos, objeto=None):
             else:
                 campo['valores_actuales'] = []
 
+        if campo.get('tipo') == 'lineas' and 'queryset' in campo:
+            qs = campo['queryset']
+            campo['opciones'] = [
+                {
+                    'producto_id': obj.pk,
+                    'nombre': obj.nombre,
+                    'costo': obj.costo,
+                }
+                for obj in qs
+            ]
+            if objeto and 'modelo_lineas' in campo:
+                lineas_qs = campo['modelo_lineas'].objects.filter(
+                    **{campo['campo_obj'] + '_id': objeto.pk}
+                ).select_related('producto')
+                campo['lineas_actuales'] = [
+                    {
+                        'producto_id': l.producto_id,
+                        'nombre': l.producto.nombre,
+                        'costo': l.producto.costo,
+                        'cantidad': l.cantidad,
+                        'subtotal': l.producto.costo * l.cantidad,
+                    }
+                    for l in lineas_qs
+                ]
+            else:
+                campo['lineas_actuales'] = []
+
     return campos
 
 def form_crear(request, model, campos_def, form_titulo, url_lista,
                template_form='reportes/modal_form.html',
                template_lista=None, extra_context=None):
 
-    # Filtrar campos solo_editar y solo_crear no aplica aquí
     campos_def = [c for c in campos_def if not c.get('solo_editar')]
     campos = get_form_campos(campos_def)
 
@@ -55,7 +82,7 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             requerido = campo.get('requerido', False)
             tipo      = campo.get('tipo', 'text')
 
-            if campo.get('especial'):
+            if campo.get('especial'):  # ← salta lineas, lov, password
                 continue
 
             valor = request.POST.get(nombre, '').strip()
@@ -90,10 +117,43 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             try:
                 obj = model(**datos)
                 if hasattr(obj, 'activo') and 'activo' not in datos:
-                    obj.activo = True  # ← default al crear
+                    obj.activo = True
                 if p1:
                     obj.set_password(p1)
-                obj.save()
+                obj.save()  # ← obj.pk ya existe aquí
+
+                # Guardar LOV (relaciones simples)
+                for campo in campos:
+                    if campo.get('tipo') in ('lov', 'multiselect') and campo.get('especial'):
+                        nombre     = campo['nombre']
+                        valores    = request.POST.getlist(nombre)
+                        modelo_rel = campo.get('modelo_rel')
+                        campo_obj  = campo.get('campo_obj')
+                        campo_rel  = campo.get('campo_rel')
+                        if modelo_rel and campo_obj and campo_rel:
+                            for valor in valores:
+                                modelo_rel.objects.create(**{
+                                    campo_obj + '_id': obj.pk,
+                                    campo_rel + '_id': valor,
+                                })
+
+                # Guardar lineas (relaciones con cantidad)
+                for campo in campos:
+                    if campo.get('tipo') == 'lineas' and campo.get('especial'):
+                        nombre     = campo['nombre']
+                        modelo_lin = campo.get('modelo_lineas')
+                        campo_obj  = campo.get('campo_obj')
+                        campo_prod = campo.get('campo_prod')
+                        if modelo_lin and campo_obj and campo_prod:
+                            productos = request.POST.getlist(nombre + '_producto')
+                            for producto_id in productos:
+                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1)
+                                modelo_lin.objects.create(**{
+                                    campo_obj + '_id': obj.pk,
+                                    campo_prod + '_id': producto_id,
+                                    'cantidad': cantidad,
+                                })
+
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'
                 return response
@@ -191,6 +251,23 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                                     print(f"Creado: {obj_creado}")
                             except Exception as e:
                                 print(f"Error LOV: {e}")
+
+                # Guardar lineas (relaciones con cantidad)
+                for campo in campos:
+                    if campo.get('tipo') == 'lineas' and campo.get('especial'):
+                        nombre = campo['nombre']
+                        modelo_lin = campo.get('modelo_lineas')
+                        campo_obj = campo.get('campo_obj')
+                        campo_prod = campo.get('campo_prod')
+                        if modelo_lin and campo_obj and campo_prod:
+                            productos = request.POST.getlist(nombre + '_producto')
+                            for producto_id in productos:
+                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1)
+                                modelo_lin.objects.create(**{
+                                    campo_obj + '_id': objeto.pk,
+                                    campo_prod + '_id': producto_id,
+                                    'cantidad': cantidad,
+                                })
 
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'

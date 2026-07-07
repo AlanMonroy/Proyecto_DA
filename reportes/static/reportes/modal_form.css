@@ -287,3 +287,72 @@
   .modal-form-header,
   .modal-form-footer { padding: 1rem 1.25rem; }
 }
+
+/*------------------------------------------------------------*/
+/* ─── Lineas ─────────────────────────────────────────────── */
+/*------------------------------------------------------------*/
+.lineas-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lineas-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.lineas-tabla thead th {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.lineas-tabla tbody tr {
+  border-bottom: 1px solid #f0ece4;
+}
+
+.lineas-tabla td {
+  padding: 0.5rem 0.6rem;
+  vertical-align: middle;
+}
+
+.linea-cantidad {
+  width: 70px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.linea-eliminar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger);
+  font-size: 1.2rem;
+  padding: 0 0.3rem;
+  transition: opacity 0.15s;
+}
+.linea-eliminar:hover { opacity: 0.7; }
+
+.lineas-total {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.lineas-agregar { margin-top: 0.25rem; }
+
+.lineas-tabla tfoot td {
+  padding: 0.6rem;
+  border-top: 1.5px solid var(--border);
+}

@@ -5,7 +5,7 @@ from django.db.models.functions import Abs
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -941,7 +941,14 @@ def reporte_cotizaciones(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
-    qs = Cotizaciones.objects.all()
+    qs = Cotizaciones.objects.annotate(
+        costo_partida=Sum(
+            ExpressionWrapper(
+                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                output_field=DecimalField()
+            )
+        )
+    ).all()
 
     if q:
         if columna == 'nombre':
@@ -971,6 +978,7 @@ def reporte_cotizaciones(request):
     columnas = [
         {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'costo_partida', 'label': 'Costo de Partida', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
     ]
 
@@ -1008,6 +1016,18 @@ def get_campos_cotizaciones():
             'ancho': 'completo',
             'placeholder': 'Nombre de la cotizacion',
         },
+        {
+            'nombre': 'productos',
+            'label': 'Productos',
+            'tipo': 'lineas',
+            'requerido': False,
+            'ancho': 'completo',
+            'especial': True,
+            'modelo_lineas': CotizacionProductos,
+            'campo_obj': 'cotizacion',
+            'campo_prod': 'producto',
+            'queryset': Productos.objects.all().order_by('nombre'),
+        },
     ]
 
 @login_requerido
@@ -1024,7 +1044,7 @@ def create_cotizacion(request):
 def edit_cotizacion(request, pk):
     return form_editar(
         request,
-        model=Productos,
+        model=Cotizaciones,
         pk=pk,
         campos_def=get_campos_cotizaciones(),
         form_titulo='Editar cotizacion',

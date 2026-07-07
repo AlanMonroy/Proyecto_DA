@@ -115,3 +115,84 @@ document.addEventListener('click', function(e) {
     }
   });
 });
+
+/* ─── Lineas ─────────────────────────────────────────────── */
+function lineasBuscar(nombre, query) {
+  const dropdown = document.getElementById('lineas-dropdown-' + nombre);
+  const opciones = dropdown.querySelectorAll('.lov-opcion');
+  const q = query.toLowerCase().trim();
+  const body = document.getElementById('lineas-body-' + nombre);
+  const yaAgregados = Array.from(body.querySelectorAll('.linea-row'))
+    .map(r => r.dataset.productoId);
+
+  let visibles = 0;
+  opciones.forEach(function(op) {
+    const yaEsta = yaAgregados.includes(op.dataset.id);
+    const coincide = q === '' || op.dataset.nombre.toLowerCase().includes(q);
+    if (!yaEsta && coincide) {
+      op.classList.remove('oculto');
+      visibles++;
+    } else {
+      op.classList.add('oculto');
+    }
+  });
+  dropdown.classList.toggle('visible', visibles > 0);
+}
+
+function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
+  const body     = document.getElementById('lineas-body-' + nombre);
+  const dropdown = document.getElementById('lineas-dropdown-' + nombre);
+  const input    = dropdown.closest('.lov-input-wrap').querySelector('.lov-input');
+
+  const tr = document.createElement('tr');
+  tr.className = 'linea-row';
+  tr.dataset.productoId = productoId;
+  tr.innerHTML = `
+    <td>${productoNombre}</td>
+    <td class="linea-costo">$${costo}</td>
+    <td>
+      <input type="number" class="linea-cantidad"
+             name="cantidad_${productoId}"
+             value="1" min="1"
+             onchange="lineasActualizar('${nombre}')" />
+      <input type="hidden" name="${nombre}_producto" value="${productoId}" />
+    </td>
+    <td class="linea-subtotal">$${costo}</td>
+    <td>
+      <button type="button" class="linea-eliminar"
+              onclick="lineasEliminar('${nombre}', this)">×</button>
+    </td>
+  `;
+  body.appendChild(tr);
+
+  el.classList.add('oculto');
+  input.value = '';
+  dropdown.classList.remove('visible');
+  lineasActualizar(nombre);
+}
+
+function lineasEliminar(nombre, btn) {
+  const row = btn.closest('.linea-row');
+  const productoId = row.dataset.productoId;
+  const dropdown = document.getElementById('lineas-dropdown-' + nombre);
+  const op = dropdown.querySelector(`[data-id="${productoId}"]`);
+  if (op) op.classList.remove('oculto');
+  row.remove();
+  lineasActualizar(nombre);
+}
+
+function lineasActualizar(nombre) {
+  const body  = document.getElementById('lineas-body-' + nombre);
+  const total = document.getElementById('lineas-total-' + nombre);
+  let suma = 0;
+
+  body.querySelectorAll('.linea-row').forEach(function(row) {
+    const costo    = parseFloat(row.querySelector('.linea-costo').textContent.replace('$','')) || 0;
+    const cantidad = parseInt(row.querySelector('.linea-cantidad').value) || 1;
+    const subtotal = costo * cantidad;
+    row.querySelector('.linea-subtotal').textContent = '$' + subtotal.toLocaleString();
+    suma += subtotal;
+  });
+
+  total.textContent = '$' + suma.toLocaleString();
+}

@@ -193,6 +193,74 @@
             </div>
           </div>
 
+        <!-- LINEAS - subformulario producto + cantidad -->
+        {% elif campo.tipo == 'lineas' %}
+        <div class="lineas-wrap" id="lineas-{{ campo.nombre }}">
+
+          <!-- Tabla de líneas agregadas -->
+          <table class="lineas-tabla" id="lineas-tabla-{{ campo.nombre }}">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Costo unit.</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lineas-body-{{ campo.nombre }}">
+              {% for linea in campo.lineas_actuales %}
+              <tr class="linea-row" data-producto-id="{{ linea.producto_id }}">
+                <td>{{ linea.nombre }}</td>
+                <td class="linea-costo">${{ linea.costo }}</td>
+                <td>
+                  <input type="number" class="linea-cantidad"
+                         name="cantidad_{{ linea.producto_id }}"
+                         value="{{ linea.cantidad }}" min="1"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                  <input type="hidden" name="{{ campo.nombre }}_producto" value="{{ linea.producto_id }}" />
+                </td>
+                <td class="linea-subtotal">${{ linea.subtotal }}</td>
+                <td>
+                  <button type="button" class="linea-eliminar"
+                          onclick="lineasEliminar('{{ campo.nombre }}', this)">×</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="text-align:right; font-weight:600;">Total:</td>
+                <td colspan="2" class="lineas-total" id="lineas-total-{{ campo.nombre }}">$0</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Buscador de productos -->
+          <div class="lineas-agregar">
+            <div class="lov-input-wrap">
+              <input type="text"
+                     class="lov-input"
+                     placeholder="Buscar producto para agregar..."
+                     autocomplete="off"
+                     oninput="lineasBuscar('{{ campo.nombre }}', this.value)"
+                     onfocus="lineasBuscar('{{ campo.nombre }}', this.value)" />
+              <div class="lov-dropdown" id="lineas-dropdown-{{ campo.nombre }}">
+                {% for opcion in campo.opciones %}
+                <div class="lov-opcion"
+                     data-id="{{ opcion.producto_id }}"
+                     data-nombre="{{ opcion.nombre }}"
+                     data-costo="{{ opcion.costo }}"
+                     onclick="lineasAgregar('{{ campo.nombre }}', '{{ opcion.producto_id }}', '{{ opcion.nombre }}', {{ opcion.costo }}, this)">
+                  {{ opcion.nombre }} — ${{ opcion.costo }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
           <!-- COLOR -->
           {% elif campo.tipo == 'color' %}
             <div class="color-field-wrap">
