@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
-from django.db.models.functions import Abs
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value
+from django.db.models.functions import Abs, NullIf, Cast
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar
 from users.models import Usuario, Rol
@@ -172,9 +172,6 @@ def reporte_proyectos(request):
     direccion = request.GET.get('dir', 'asc')
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
-
-    #qs = Proyectos.objects.all()
-    #qs = Proyectos.objects.select_related('estatus', 'prioridad', 'cliente').all()
 
     qs = Proyectos.objects.select_related(
         'estatus', 'prioridad', 'cliente'
@@ -941,12 +938,23 @@ def reporte_cotizaciones(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
+    dec = DecimalField(max_digits=20, decimal_places=2)
+    cien = Cast(Value(100), output_field=dec)
+
     qs = Cotizaciones.objects.annotate(
         costo_partida=Sum(
             ExpressionWrapper(
                 F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
-                output_field=DecimalField()
+                output_field=dec
             )
+        )
+    ).annotate(
+        venta_partida=ExpressionWrapper(
+            F('costo_partida') / NullIf(
+                (cien - Cast(F('margen'), output_field=dec)) / cien,
+                Cast(Value(0), output_field=dec)
+            ),
+            output_field=dec
         )
     ).all()
 
@@ -979,6 +987,8 @@ def reporte_cotizaciones(request):
         {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'costo_partida', 'label': 'Costo de Partida', 'tipo': 'moneda', 'ordenable': True},
+        {'campo': 'margen', 'label': 'Margen', 'tipo': 'numero', 'ordenable': True},
+        {'campo': 'venta_partida', 'label': 'Venta de partida', 'tipo': 'numero', 'ordenable': True},
         {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
     ]
 
@@ -1027,6 +1037,23 @@ def get_campos_cotizaciones():
             'campo_obj': 'cotizacion',
             'campo_prod': 'producto',
             'queryset': Productos.objects.all().order_by('nombre'),
+            'nombre_campo_total': 'Costo de partida',
+            'valor_campo_total': 'costo_partida',
+        },
+        {
+            'nombre': 'margen',
+            'label': 'Margen',
+            'tipo': 'number',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'venta_partida',
+            'label': 'Venta de partida',
+            'tipo': 'readonly',
+            'requerido': False,
+            'ancho': 'medio',
+            'campo_valor': 'venta_partida',
         },
     ]
 
@@ -1042,6 +1069,26 @@ def create_cotizacion(request):
 
 @login_requerido
 def edit_cotizacion(request, pk):
+    dec = DecimalField(max_digits=20, decimal_places=2)
+    cien = Cast(Value(100), output_field=dec)
+
+    qs = Cotizaciones.objects.annotate(
+        costo_partida=Sum(
+            ExpressionWrapper(
+                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                output_field=dec
+            )
+        )
+    ).annotate(
+        venta_partida=ExpressionWrapper(
+            F('costo_partida') / NullIf(
+                (cien - Cast(F('margen'), output_field=dec)) / cien,
+                Cast(Value(0), output_field=dec)
+            ),
+            output_field=dec
+        )
+    ).all()
+
     return form_editar(
         request,
         model=Cotizaciones,
@@ -1049,6 +1096,7 @@ def edit_cotizacion(request, pk):
         campos_def=get_campos_cotizaciones(),
         form_titulo='Editar cotizacion',
         url_lista='reporte_cotizaciones',
+        extra_context={'queryset_editar': qs},
     )
 
 @login_requerido

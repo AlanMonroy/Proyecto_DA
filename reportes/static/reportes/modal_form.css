@@ -84,6 +84,7 @@
 .form-field input[type="date"],
 .form-field input[type="datetime-local"],
 .form-field textarea,
+.form-field .field-readonly,
 .form-field select {
   width: 100%;
   padding: 0 0.85rem;
@@ -355,4 +356,11 @@
 .lineas-tabla tfoot td {
   padding: 0.6rem;
   border-top: 1.5px solid var(--border);
+}
+
+.field-readonly {
+  background: #f7f4ef;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
 }

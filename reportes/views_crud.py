@@ -187,8 +187,13 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
 def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                 template_form='reportes/modal_form.html',
                 extra_context=None):
-    """Vista genérica para editar un registro vía HTMX."""
-    objeto = get_object_or_404(model, pk=pk)
+
+    queryset = extra_context.pop('queryset_editar', None) if extra_context else None
+    if queryset:
+        objeto = get_object_or_404(queryset, pk=pk) #Usar query con datos agregados
+    else:
+        objeto = get_object_or_404(model, pk=pk) #usar model normal
+
     # Filtrar campos solo_crear
     campos_def = [c for c in campos_def if not c.get('solo_crear')]
     campos = get_form_campos(campos_def, objeto)
@@ -260,6 +265,7 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                         campo_obj = campo.get('campo_obj')
                         campo_prod = campo.get('campo_prod')
                         if modelo_lin and campo_obj and campo_prod:
+                            modelo_lin.objects.filter(**{campo_obj + '_id': objeto.pk}).delete()
                             productos = request.POST.getlist(nombre + '_producto')
                             for producto_id in productos:
                                 cantidad = request.POST.get(f'cantidad_{producto_id}', 1)

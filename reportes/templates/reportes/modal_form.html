@@ -59,6 +59,16 @@
               {% if campo.max_length %}maxlength="{{ campo.max_length }}"{% endif %}
             />
 
+          <!-- READONLY - solo mostrar valor -->
+          {% elif campo.tipo == 'readonly' %}
+            <div class="field-readonly">
+              {% if objeto and campo.campo_valor %}
+                {{ objeto|get_attr:campo.campo_valor|default:'—'|floatformat:2 }}
+              {% else %}
+                {{ campo.valor_default|default:'—' }}
+              {% endif %}
+            </div>
+
           <!-- NUMBER / DECIMAL -->
           {% elif campo.tipo == 'number' or campo.tipo == 'decimal' %}
             <input
@@ -230,8 +240,14 @@
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="3" style="text-align:right; font-weight:600;">Total:</td>
-                <td colspan="2" class="lineas-total" id="lineas-total-{{ campo.nombre }}">$0</td>
+                <td colspan="3" style="text-align:right; font-weight:600;">{{campo.nombre_campo_total}}:</td>
+                <td colspan="2" class="lineas-total" id="lineas-total-{{ campo.nombre }}">
+                  {% if objeto and campo.valor_campo_total %}
+                    ${{ objeto|get_attr:campo.valor_campo_total|default:"0"|floatformat:2 }}
+                  {% else %}
+                    $0.00
+                  {% endif %}
+                </td>
               </tr>
             </tfoot>
           </table>

@@ -221,7 +221,7 @@ class Cotizaciones(models.Model):
     nombre = models.TextField(null=True, blank=True)
     margen = models.DecimalField(
         max_digits=10,
-        decimal_places=2,
+        decimal_places=0,
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
