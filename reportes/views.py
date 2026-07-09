@@ -1037,7 +1037,7 @@ def get_campos_cotizaciones():
             'campo_obj': 'cotizacion',
             'campo_prod': 'producto',
             'queryset': Productos.objects.all().order_by('nombre'),
-            'nombre_campo_total': 'Costo de partida',
+            'nombre_campo_total': 'Costo de partida total',
             'valor_campo_total': 'costo_partida',
         },
         {

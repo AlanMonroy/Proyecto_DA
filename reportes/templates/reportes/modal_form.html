@@ -214,7 +214,9 @@
                 <th>Producto</th>
                 <th>Costo unit.</th>
                 <th>Cantidad</th>
-                <th>Subtotal</th>
+                <th>Importacion</th>
+                <th>Costo de venta</th>
+                <th>Costo de partida por producto</th>
                 <th></th>
               </tr>
             </thead>
@@ -228,20 +230,27 @@
                          name="cantidad_{{ linea.producto_id }}"
                          value="{{ linea.cantidad }}" min="1"
                          onchange="lineasActualizar('{{ campo.nombre }}')"/>
-                  <input type="hidden" name="{{ campo.nombre }}_producto" value="{{ linea.producto_id }}" />
                 </td>
+                <td>
+                  <input type="number" class="linea-importacion"
+                         name="importacion_{{ linea.producto_id }}"
+                         value="{{ linea.importacion|default:0 }}" min="1"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                </td>
+                <td class="linea-costo-venta">${{ linea.costo_venta }}</td>
                 <td class="linea-subtotal">${{ linea.subtotal }}</td>
                 <td>
                   <button type="button" class="linea-eliminar"
                           onclick="lineasEliminar('{{ campo.nombre }}', this)">×</button>
                 </td>
+                <input type="hidden" name="{{ campo.nombre }}_producto" value="{{ linea.producto_id }}" />
               </tr>
               {% endfor %}
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="3" style="text-align:right; font-weight:600;">{{campo.nombre_campo_total}}:</td>
-                <td colspan="2" class="lineas-total" id="lineas-total-{{ campo.nombre }}">
+                <td colspan="5" style="text-align:right; font-weight:600;">{{campo.nombre_campo_total}}:</td>
+                <td colspan="4" class="lineas-total" id="lineas-total-{{ campo.nombre }}">
                   {% if objeto and campo.valor_campo_total %}
                     ${{ objeto|get_attr:campo.valor_campo_total|default:"0"|floatformat:2 }}
                   {% else %}

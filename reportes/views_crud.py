@@ -57,6 +57,8 @@ def get_form_campos(campos, objeto=None):
                         'nombre': l.producto.nombre,
                         'costo': l.producto.costo,
                         'cantidad': l.cantidad,
+                        'importacion': l.importacion,
+                        'costo_venta': l.producto.costo * l.importacion if l.importacion else 0,
                         'subtotal': l.producto.costo * l.cantidad,
                     }
                     for l in lineas_qs
@@ -199,6 +201,7 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
     campos = get_form_campos(campos_def, objeto)
 
     if request.method == 'POST':
+        print(f"POST completo: {dict(request.POST)}")
         errores = {}
 
         for campo in campos:
@@ -266,14 +269,24 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                         campo_prod = campo.get('campo_prod')
                         if modelo_lin and campo_obj and campo_prod:
                             modelo_lin.objects.filter(**{campo_obj + '_id': objeto.pk}).delete()
+                            print(f"Eliminados registros de {modelo_lin} para pk={objeto.pk}")
                             productos = request.POST.getlist(nombre + '_producto')
+                            print(f"Intentando crear {len(productos)} productos")
                             for producto_id in productos:
-                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1)
-                                modelo_lin.objects.create(**{
-                                    campo_obj + '_id': objeto.pk,
-                                    campo_prod + '_id': producto_id,
-                                    'cantidad': cantidad,
-                                })
+                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1) or 1
+                                importacion = request.POST.get(f'importacion_{producto_id}', 0) or 0
+                                print(
+                                    f"Creando: cotizacion_id={objeto.pk}, producto_id={producto_id}, cantidad={cantidad}, importacion={importacion}")
+                                try:
+                                    obj_creado = modelo_lin.objects.create(**{
+                                        campo_obj + '_id': objeto.pk,
+                                        campo_prod + '_id': producto_id,
+                                        'cantidad': cantidad,
+                                        'importacion': importacion,
+                                    })
+                                    print(f"Creado OK: {obj_creado.pk}")
+                                except Exception as e:
+                                    print(f"Error al crear: {e}")
 
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'

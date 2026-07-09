@@ -155,13 +155,20 @@ function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
              name="cantidad_${productoId}"
              value="1" min="1"
              onchange="lineasActualizar('${nombre}')" />
-      <input type="hidden" name="${nombre}_producto" value="${productoId}" />
     </td>
+    <td>
+      <input type="number" class="linea-importacion"
+             name="importacion_${productoId}"
+             value="0" min="0"
+             onchange="lineasActualizar('${nombre}')" />
+    </td>
+    <td class="linea-costo-venta">$0</td>
     <td class="linea-subtotal">$${costo}</td>
     <td>
       <button type="button" class="linea-eliminar"
               onclick="lineasEliminar('${nombre}', this)">×</button>
     </td>
+    <input type="hidden" name="${nombre}_producto" value="${productoId}" />
   `;
   body.appendChild(tr);
 
@@ -189,7 +196,10 @@ function lineasActualizar(nombre) {
   body.querySelectorAll('.linea-row').forEach(function(row) {
     const costo    = parseFloat(row.querySelector('.linea-costo').textContent.replace('$','')) || 0;
     const cantidad = parseInt(row.querySelector('.linea-cantidad').value) || 1;
+    const importacion = parseInt(row.querySelector('.linea-importacion').value) || 0;
+    const costo_venta = costo * importacion;
     const subtotal = costo * cantidad;
+    row.querySelector('.linea-costo-venta').textContent = '$' + costo_venta.toLocaleString();
     row.querySelector('.linea-subtotal').textContent = '$' + subtotal.toLocaleString();
     suma += subtotal;
   });
