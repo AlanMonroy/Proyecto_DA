@@ -1010,7 +1010,7 @@ def reporte_cotizaciones(request):
         'puede_editar':        request.session.get('usuario_rol') == 0,
         'puede_eliminar':      request.session.get('usuario_rol') == 0,
         'puede_exportar':      True,
-        'url_crear':           '/reportes/cotizaciones/crear/',
+        'url_crear':            '/reportes/cotizaciones/crear/',
         'btn_crear_texto':     'Nueva Cotizacion',
     }
 

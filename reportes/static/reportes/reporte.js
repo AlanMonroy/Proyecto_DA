@@ -1,9 +1,16 @@
 'use strict';
 
 /* ─── Modal eliminar ─────────────────────────────────────── */
-function confirmarEliminar(url, nombre) {
+/*function confirmarEliminar(url, nombre) {
   document.getElementById('modal-item-nombre').textContent = nombre;
   document.getElementById('modal-form-eliminar').action = url;
+  document.getElementById('modal-eliminar').classList.add('visible');
+}*/
+function confirmarEliminar(url, nombre) {
+  document.getElementById('modal-item-nombre').textContent = nombre;
+  const form = document.getElementById('modal-form-eliminar');
+  form.setAttribute('hx-post', url);
+  htmx.process(form);  // ← re-procesa HTMX en el form
   document.getElementById('modal-eliminar').classList.add('visible');
 }
 

@@ -153,7 +153,7 @@
                 <button
                   class="btn-accion btn-eliminar"
                   title="Eliminar"
-                  onclick="confirmarEliminar('{{ url_eliminar_base }}{{ fila.pk }}/', '{{ fila }}')">
+                  onclick="confirmarEliminar('{{ url_eliminar_base }}{{ fila.pk }}/eliminar/', '{{ fila }}')">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 </button>
             {% endif %}
@@ -253,9 +253,16 @@
             <p class="modal-mensaje">¿Estás seguro de eliminar <strong id="modal-item-nombre"></strong>? Esta acción no se puede deshacer.</p>
             <div class="modal-acciones">
                 <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-                <form method="POST" id="modal-form-eliminar">
+                <!--<form method="POST" id="modal-form-eliminar">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>-->
+                <form hx-post=""
+                      id="modal-form-eliminar"
+                      hx-target="body"
+                      hx-swap="none">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger">Eliminar</button>
                 </form>
             </div>
         </div>
@@ -269,7 +276,7 @@
 {% block scripts %}
     <script src="{% static 'reportes/reporte.js' %}"></script>
     <script>
-        document.body.addEventListener('refreshTabla', function() {
+         document.body.addEventListener('refreshTabla', function() {
             document.getElementById('htmx-modal').innerHTML = '';
             window.location.reload();
         });
@@ -277,6 +284,7 @@
         document.body.addEventListener('htmx:afterRequest', function(event) {
             if (event.detail.successful && event.detail.xhr.status === 204) {
                 document.getElementById('htmx-modal').innerHTML = '';
+                cerrarModal();
                 window.location.reload();
             }
         });
