@@ -3,6 +3,7 @@ views_crud.py — Vistas genéricas HTMX para CRUD
 Importa y usa en cualquier app de reportes.
 """
 from django.shortcuts import render, get_object_or_404
+import csv
 from django.http import HttpResponse
 from django.contrib import messages
 
@@ -324,3 +325,31 @@ def form_eliminar(request, model, pk):
         response['HX-Trigger'] = 'refreshTabla'
         return response
     return HttpResponse(status=405)
+
+def exportar_csv(request, queryset, columnas, nombre_archivo):
+    """
+    Vista genérica para exportar cualquier queryset a CSV.
+    queryset:      el queryset a exportar
+    columnas:      lista de dicts con 'campo' y 'label' (las mismas del reporte)
+    nombre_archivo: nombre del archivo sin extensión
+    """
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}.csv"'
+    response.write('\ufeff')  # BOM para que Excel abra UTF-8 correctamente
+
+    writer = csv.writer(response)
+
+    # Encabezados
+    writer.writerow([col['label'] for col in columnas])
+
+    # Filas
+    for obj in queryset:
+        fila = []
+        for col in columnas:
+            valor = getattr(obj, col['campo'], '—')
+            if valor is None:
+                valor = '—'
+            fila.append(str(valor))
+        writer.writerow(fila)
+
+    return response

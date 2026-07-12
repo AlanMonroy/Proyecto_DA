@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value
 from django.db.models.functions import Abs, NullIf, Cast
 from users.decorators import login_requerido
-from .views_crud import form_crear, form_editar, form_eliminar
+from .views_crud import form_crear, form_editar, form_eliminar, exportar_csv
 from users.models import Usuario, Rol
 from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos
 
@@ -985,6 +986,7 @@ def reporte_cotizaciones(request):
 
     columnas = [
         {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'costo_partida', 'label': 'Costo de Partida', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'margen', 'label': 'Margen', 'tipo': 'numero', 'ordenable': True},
@@ -1011,13 +1013,23 @@ def reporte_cotizaciones(request):
         'puede_eliminar':      request.session.get('usuario_rol') == 0,
         'puede_exportar':      True,
         'url_crear':            '/reportes/cotizaciones/crear/',
-        'btn_crear_texto':     'Nueva Cotizacion',
+        'url_exportar':         '/reportes/cotizaciones/exportar/',
+        'btn_crear_texto':      'Nueva Cotizacion',
     }
 
     return render(request, 'reportes/reporte_base.html', context)
 
 def get_campos_cotizaciones():
     return [
+        {
+            'nombre': 'proyecto',
+            'label': 'Proyecto',
+            'tipo': 'select',
+            'campo_fk': 'proyecto',
+            'requerido': True,
+            'ancho': 'completo',
+            'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
+        },
         {
             'nombre': 'nombre',
             'label': 'Nombre',
@@ -1096,9 +1108,213 @@ def edit_cotizacion(request, pk):
         campos_def=get_campos_cotizaciones(),
         form_titulo='Editar cotizacion',
         url_lista='reporte_cotizaciones',
-        extra_context={'queryset_editar': qs},
+        extra_context={'queryset_editar': qs, 'url_pdf': f'/reportes/cotizaciones/{pk}/pdf/',},
     )
 
 @login_requerido
 def delete_cotizacion(request, pk):
     return form_eliminar(request, Cotizaciones, pk)
+
+@login_requerido
+def exportar_cotizaciones(request):
+    dec  = DecimalField(max_digits=20, decimal_places=2)
+    cien = Cast(Value(100), output_field=dec)
+
+    qs = Cotizaciones.objects.annotate(
+        costo_partida=Sum(
+            ExpressionWrapper(
+                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                output_field=dec
+            )
+        )
+    ).annotate(
+        venta_partida=ExpressionWrapper(
+            F('costo_partida') / NullIf(
+                (cien - Cast(F('margen'), output_field=dec)) / cien,
+                Cast(Value(0), output_field=dec)
+            ),
+            output_field=dec
+        )
+    ).all()
+
+    columnas = [
+        {'campo': 'cotizacion_id',  'label': 'ID'},
+        {'campo': 'nombre',         'label': 'Nombre'},
+        {'campo': 'costo_partida',  'label': 'Costo de Partida'},
+        {'campo': 'margen',         'label': 'Margen'},
+        {'campo': 'venta_partida',  'label': 'Venta de Partida'},
+        {'campo': 'fecha_creacion', 'label': 'Creado'},
+    ]
+
+    return exportar_csv(request, qs, columnas, 'cotizaciones')
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_RIGHT, TA_CENTER
+import io
+
+@login_requerido
+def pdf_cotizacion(request, pk):
+    # Obtener cotizacion con productos
+    dec  = DecimalField(max_digits=20, decimal_places=2)
+    cien = Cast(Value(100), output_field=dec)
+
+    cotizacion = Cotizaciones.objects.annotate(
+        costo_partida=Sum(
+            ExpressionWrapper(
+                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                output_field=dec
+            )
+        )
+    ).annotate(
+        venta_partida=ExpressionWrapper(
+            F('costo_partida') / NullIf(
+                (cien - Cast(F('margen'), output_field=dec)) / cien,
+                Cast(Value(0), output_field=dec)
+            ),
+            output_field=dec
+        )
+    ).get(pk=pk)
+
+    productos = CotizacionProductos.objects.filter(
+        cotizacion_id=pk
+    ).select_related('producto')
+
+    # Crear PDF en memoria
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        topMargin=0.75*inch,
+        bottomMargin=0.75*inch
+    )
+
+    styles = getSampleStyleSheet()
+    story  = []
+
+    # ── Estilos personalizados ────────────────────────────────
+    estilo_titulo = ParagraphStyle(
+        'titulo',
+        parent=styles['Title'],
+        fontSize=20,
+        textColor=colors.HexColor('#1a1a2e'),
+        spaceAfter=4,
+    )
+    estilo_subtitulo = ParagraphStyle(
+        'subtitulo',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#6b6b6b'),
+        spaceAfter=20,
+    )
+    estilo_label = ParagraphStyle(
+        'label',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#6b6b6b'),
+        spaceAfter=2,
+    )
+    estilo_valor = ParagraphStyle(
+        'valor',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#1c1c1c'),
+        spaceAfter=12,
+    )
+    estilo_derecha = ParagraphStyle(
+        'derecha',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#1c1c1c'),
+        alignment=TA_RIGHT,
+    )
+
+    # ── Encabezado ────────────────────────────────────────────
+    story.append(Paragraph('Cotización', estilo_titulo))
+    story.append(Paragraph(cotizacion.nombre, estilo_subtitulo))
+    story.append(Spacer(1, 0.1*inch))
+
+    # ── Tabla de productos ────────────────────────────────────
+    encabezados = ['Producto', 'Costo Unit.', 'Importación', 'Costo de Venta', 'Cantidad', 'Subtotal']
+    filas = [encabezados]
+
+    for p in productos:
+        costo_unit  = p.producto.costo or 0
+        importacion = p.importacion or 0
+        costo_venta = costo_unit * importacion
+        subtotal    = costo_venta * p.cantidad
+
+        filas.append([
+            p.producto.nombre,
+            f'${costo_unit:,.2f}',
+            f'${importacion:,.2f}',
+            f'${costo_venta:,.2f}',
+            str(p.cantidad),
+            f'${subtotal:,.2f}',
+        ])
+
+    tabla = Table(filas, colWidths=[
+        2.0*inch, 1.0*inch, 1.0*inch, 1.2*inch, 0.8*inch, 1.0*inch
+    ])
+
+    tabla.setStyle(TableStyle([
+        # Encabezado
+        ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
+        ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
+        ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0, 0), (-1, 0),  9),
+        ('ALIGN',         (0, 0), (-1, 0),  'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0),  8),
+        ('TOPPADDING',    (0, 0), (-1, 0),  8),
+        # Filas
+        ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE',      (0, 1), (-1, -1), 9),
+        ('ALIGN',         (1, 1), (-1, -1), 'RIGHT'),
+        ('ALIGN',         (0, 1), (0, -1),  'LEFT'),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, colors.HexColor('#f7f4ef')]),
+        ('TOPPADDING',    (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('LINEBELOW',     (0, 0), (-1, -1), 0.5, colors.HexColor('#e0dbd2')),
+    ]))
+
+    story.append(tabla)
+    story.append(Spacer(1, 0.3*inch))
+
+    # ── Resumen ───────────────────────────────────────────────
+    costo   = cotizacion.costo_partida  or 0
+    margen  = cotizacion.margen         or 0
+    venta   = cotizacion.venta_partida  or 0
+
+    resumen = [
+        ['Costo de partida:',  f'${costo:,.2f}'],
+        ['Margen:',            f'{margen}%'],
+        ['Venta de partida:',  f'${venta:,.2f}'],
+    ]
+
+    tabla_resumen = Table(resumen, colWidths=[4.5*inch, 2.5*inch])
+    tabla_resumen.setStyle(TableStyle([
+        ('FONTNAME',      (0, 0), (-1, -2), 'Helvetica'),
+        ('FONTNAME',      (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0, 0), (-1, -1), 10),
+        ('ALIGN',         (1, 0), (1, -1),  'RIGHT'),
+        ('TEXTCOLOR',     (0, 0), (0, -1),  colors.HexColor('#6b6b6b')),
+        ('TEXTCOLOR',     (1, 0), (1, -1),  colors.HexColor('#1c1c1c')),
+        ('LINEABOVE',     (0, -1), (-1, -1), 1, colors.HexColor('#1a1a2e')),
+        ('TOPPADDING',    (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+
+    story.append(tabla_resumen)
+
+    # ── Generar PDF ───────────────────────────────────────────
+    doc.build(story)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="cotizacion_{cotizacion.nombre}.pdf"'
+    return response

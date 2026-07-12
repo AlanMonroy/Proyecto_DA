@@ -218,6 +218,11 @@ class Productos(models.Model):
 
 class Cotizaciones(models.Model):
     cotizacion_id = models.BigAutoField(primary_key=True)
+    proyecto = models.ForeignKey(
+        Proyectos,
+        on_delete=models.CASCADE,
+        db_column='proyecto_id'
+    )
     nombre = models.TextField(null=True, blank=True)
     margen = models.DecimalField(
         max_digits=10,
