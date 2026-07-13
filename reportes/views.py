@@ -1139,6 +1139,7 @@ def exportar_cotizaciones(request):
 
     columnas = [
         {'campo': 'cotizacion_id',  'label': 'ID'},
+        {'campo': 'proyecto',       'label': 'Proyecto'},
         {'campo': 'nombre',         'label': 'Nombre'},
         {'campo': 'costo_partida',  'label': 'Costo de Partida'},
         {'campo': 'margen',         'label': 'Margen'},
@@ -1149,8 +1150,8 @@ def exportar_cotizaciones(request):
     return exportar_csv(request, qs, columnas, 'cotizaciones')
 
 from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
 from reportlab.lib.units import inch
+from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
@@ -1210,7 +1211,7 @@ def pdf_cotizacion(request, pk):
         parent=styles['Normal'],
         fontSize=10,
         textColor=colors.HexColor('#6b6b6b'),
-        spaceAfter=20,
+        spaceAfter=10,
     )
     estilo_label = ParagraphStyle(
         'label',
@@ -1234,32 +1235,74 @@ def pdf_cotizacion(request, pk):
         alignment=TA_RIGHT,
     )
 
+    estilo_th = ParagraphStyle(
+        'th',
+        fontSize=8,
+        textColor=colors.white,
+        fontName='Helvetica-Bold',
+        alignment=1,  # CENTER
+        leading=10,  # espaciado entre líneas
+    )
+
+    estilo_td = ParagraphStyle(
+        'td',
+        fontSize=9,
+        textColor=colors.HexColor('#1c1c1c'),
+        fontName='Helvetica',
+        leading=11,
+    )
+
+    estilo_td_derecha = ParagraphStyle(
+        'td_derecha',
+        fontSize=9,
+        textColor=colors.HexColor('#1c1c1c'),
+        fontName='Helvetica',
+        leading=11,
+        alignment=2,  # RIGHT
+    )
+
     # ── Encabezado ────────────────────────────────────────────
     story.append(Paragraph('Cotización', estilo_titulo))
-    story.append(Paragraph(cotizacion.nombre, estilo_subtitulo))
+    story.append(Paragraph(f'Nombre de la cotizacion: {cotizacion.nombre}', estilo_subtitulo))
+    story.append(Paragraph(f'Proyecto de la cotizacion: {cotizacion.proyecto}', estilo_subtitulo))
     story.append(Spacer(1, 0.1*inch))
 
     # ── Tabla de productos ────────────────────────────────────
-    encabezados = ['Producto', 'Costo Unit.', 'Importación', 'Costo de Venta', 'Cantidad', 'Subtotal']
+    #encabezados = ['Producto', 'Costo Unit.', 'Cantidad', 'Importación', 'Costo de Venta', 'Costo de partida por producto']
+    encabezados = [
+        Paragraph('Producto', estilo_th),
+        Paragraph('Costo<br/>Unit.', estilo_th),
+        Paragraph('Cantidad', estilo_th),
+        Paragraph('Importación', estilo_th),
+        Paragraph('Costo de<br/>Venta', estilo_th),
+        Paragraph('Costo de partida<br/>por producto', estilo_th),
+    ]
+
     filas = [encabezados]
 
     for p in productos:
-        costo_unit  = p.producto.costo or 0
+        costo_unit = p.producto.costo or 0
         importacion = p.importacion or 0
         costo_venta = costo_unit * importacion
-        subtotal    = costo_venta * p.cantidad
+        costo_partida_by_producto = costo_unit * p.cantidad
 
         filas.append([
-            p.producto.nombre,
-            f'${costo_unit:,.2f}',
-            f'${importacion:,.2f}',
-            f'${costo_venta:,.2f}',
-            str(p.cantidad),
-            f'${subtotal:,.2f}',
+            Paragraph(p.producto.nombre, estilo_td),
+            Paragraph(f'${costo_unit:,.2f}', estilo_td_derecha),
+            Paragraph(str(p.cantidad), estilo_td_derecha),
+            Paragraph(str(importacion), estilo_td_derecha),
+            Paragraph(f'${costo_venta:,.2f}', estilo_td_derecha),
+            Paragraph(f'${costo_partida_by_producto:,.2f}', estilo_td_derecha),
         ])
 
+    #tabla = Table(filas, colWidths=[2.0*inch, 1.0*inch, 1.0*inch, 1.2*inch, 0.8*inch, 1.0*inch])
     tabla = Table(filas, colWidths=[
-        2.0*inch, 1.0*inch, 1.0*inch, 1.2*inch, 0.8*inch, 1.0*inch
+        1.8 * inch,  # Producto
+        0.9 * inch,  # Costo Unit.
+        0.7 * inch,  # Cantidad
+        0.9 * inch,  # Importación
+        0.9 * inch,  # Costo de Venta
+        1.1 * inch,  # Costo de partida
     ])
 
     tabla.setStyle(TableStyle([
@@ -1292,7 +1335,7 @@ def pdf_cotizacion(request, pk):
 
     resumen = [
         ['Costo de partida:',  f'${costo:,.2f}'],
-        ['Margen:',            f'{margen}%'],
+        ['Margen:',            f'{margen}'],
         ['Venta de partida:',  f'${venta:,.2f}'],
     ]
 
