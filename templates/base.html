@@ -1,5 +1,9 @@
 {% load static %}
-{% load django_browser_reload %}
+
+{% if debug %}
+    {% load django_browser_reload %}
+    {% django_browser_reload_script %}
+{% endif %}
 
 <!DOCTYPE html>
 <html lang="es">
@@ -66,6 +70,6 @@
 
   {% block scripts %}{% endblock %}
 
-  {% django_browser_reload_script %}
+  <!--{% django_browser_reload_script %}-->
 </body>
 </html>
