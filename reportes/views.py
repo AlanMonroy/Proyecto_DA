@@ -7,6 +7,7 @@ from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar, exportar_csv
 from users.models import Usuario, Rol
 from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos
+import time
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -166,6 +167,7 @@ def reporte_refacciones(request):
 
 @login_requerido
 def reporte_proyectos(request):
+    inicio = time.perf_counter()
 
     q         = request.GET.get('q', '').strip()
     columna   = request.GET.get('columna', '')
@@ -264,7 +266,7 @@ def reporte_proyectos(request):
         'url_crear':           '/reportes/proyectos/crear/',
         'btn_crear_texto':     'Nuevo Proyecto',
     }
-
+    print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
 
 def get_campos_proyecto():
@@ -932,6 +934,7 @@ def delete_producto(request, pk):
 #-----------COTIZACIONES------------#
 @login_requerido
 def reporte_cotizaciones(request):
+    inicio = time.perf_counter()
 
     q         = request.GET.get('q', '').strip()
     columna   = request.GET.get('columna', '')
@@ -1016,7 +1019,7 @@ def reporte_cotizaciones(request):
         'url_exportar':         '/reportes/cotizaciones/exportar/',
         'btn_crear_texto':      'Nueva Cotizacion',
     }
-
+    print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
 
 def get_campos_cotizaciones():
