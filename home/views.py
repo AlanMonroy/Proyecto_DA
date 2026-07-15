@@ -3,6 +3,7 @@ from users.decorators import login_requerido
 from reportes.models import ProyectoAsignacion, ProyectosActividades
 from django.db.models import Sum
 from django.utils import timezone
+import traceback
 
 @login_requerido
 def home(request):
@@ -11,9 +12,14 @@ def home(request):
 @login_requerido
 def home_admin(request):
     # Solo rol 0 puede entrar aquí
-    if request.session.get('usuario_rol') != 0:
-        return redirect('home-user')
-    return render(request, 'home/home_admin.html')
+    try:
+        if request.session.get('usuario_rol') != 0:
+            return redirect('home-user')
+        return render(request, 'home/home_admin.html')
+    except Exception:
+        traceback.print_exc()
+        raise
+
 
 @login_requerido
 def home_user(request):
