@@ -44,10 +44,9 @@ INSTALLED_APPS = [
     'users',
     'reportes',
     'django_htmx',
+    'django_browser_reload',
 ]
 
-if DEBUG:
-    INSTALLED_APPS.append("django_browser_reload")
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
