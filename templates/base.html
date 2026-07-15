@@ -1,8 +1,7 @@
 {% load static %}
 
 {% if debug %}
-    {% load django_browser_reload %}
-    {% django_browser_reload_script %}
+    {{% load django_browser_reload %}}
 {% endif %}
 
 <!DOCTYPE html>
@@ -71,5 +70,8 @@
   {% block scripts %}{% endblock %}
 
   <!--{% django_browser_reload_script %}-->
+  {% if debug %}
+      {{% django_browser_reload_script %}}
+  {% endif %}
 </body>
 </html>
