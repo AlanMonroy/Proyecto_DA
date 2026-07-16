@@ -165,7 +165,7 @@ function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
     </td>
     <td>
       <input type="number" class="linea-importacion"
-             name="importacion_${productoId}"
+             name="exportacion_${productoId}"
              value="0" min="0"
              onchange="lineasActualizar('${nombre}')" />
     </td>
