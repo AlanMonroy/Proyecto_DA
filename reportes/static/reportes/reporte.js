@@ -203,8 +203,8 @@ function lineasActualizar(nombre) {
   body.querySelectorAll('.linea-row').forEach(function(row) {
     const costo    = parseFloat(row.querySelector('.linea-costo').textContent.replace('$','')) || 0;
     const cantidad = parseInt(row.querySelector('.linea-cantidad').value) || 1;
-    const importacion = parseInt(row.querySelector('.linea-importacion').value) || 0;
-    const costo_venta = costo * importacion;
+    const exportacion = parseInt(row.querySelector('.linea-importacion').value) || 0;
+    const costo_venta = costo * exportacion;
     const subtotal = costo * cantidad;
     row.querySelector('.linea-costo-venta').textContent = '$' + costo_venta.toLocaleString();
     row.querySelector('.linea-subtotal').textContent = '$' + subtotal.toLocaleString();
