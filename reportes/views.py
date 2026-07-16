@@ -1271,12 +1271,11 @@ def pdf_cotizacion(request, pk):
     story.append(Spacer(1, 0.1*inch))
 
     # ── Tabla de productos ────────────────────────────────────
-    #encabezados = ['Producto', 'Costo Unit.', 'Cantidad', 'Importación', 'Costo de Venta', 'Costo de partida por producto']
     encabezados = [
         Paragraph('Producto', estilo_th),
         Paragraph('Costo<br/>Unit.', estilo_th),
         Paragraph('Cantidad', estilo_th),
-        Paragraph('Importación', estilo_th),
+        Paragraph('Exportacion', estilo_th),
         Paragraph('Costo de<br/>Venta', estilo_th),
         Paragraph('Costo de partida<br/>por producto', estilo_th),
     ]
@@ -1285,15 +1284,15 @@ def pdf_cotizacion(request, pk):
 
     for p in productos:
         costo_unit = p.producto.costo or 0
-        importacion = p.importacion or 0
-        costo_venta = costo_unit * importacion
+        exportacion = p.exportacion or 0
+        costo_venta = costo_unit * exportacion
         costo_partida_by_producto = costo_unit * p.cantidad
 
         filas.append([
             Paragraph(p.producto.nombre, estilo_td),
             Paragraph(f'${costo_unit:,.2f}', estilo_td_derecha),
             Paragraph(str(p.cantidad), estilo_td_derecha),
-            Paragraph(str(importacion), estilo_td_derecha),
+            Paragraph(str(exportacion), estilo_td_derecha),
             Paragraph(f'${costo_venta:,.2f}', estilo_td_derecha),
             Paragraph(f'${costo_partida_by_producto:,.2f}', estilo_td_derecha),
         ])
@@ -1303,7 +1302,7 @@ def pdf_cotizacion(request, pk):
         1.8 * inch,  # Producto
         0.9 * inch,  # Costo Unit.
         0.7 * inch,  # Cantidad
-        0.9 * inch,  # Importación
+        0.9 * inch,  # Exportacion
         0.9 * inch,  # Costo de Venta
         1.1 * inch,  # Costo de partida
     ])

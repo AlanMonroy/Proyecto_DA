@@ -58,8 +58,8 @@ def get_form_campos(campos, objeto=None):
                         'nombre': l.producto.nombre,
                         'costo': l.producto.costo,
                         'cantidad': l.cantidad,
-                        'importacion': l.importacion,
-                        'costo_venta': l.producto.costo * l.importacion if l.importacion else 0,
+                        'exportacion': l.exportacion,
+                        'costo_venta': l.producto.costo * l.exportacion if l.exportacion else 0,
                         'subtotal': l.producto.costo * l.cantidad,
                     }
                     for l in lineas_qs
@@ -275,15 +275,15 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                             print(f"Intentando crear {len(productos)} productos")
                             for producto_id in productos:
                                 cantidad = request.POST.get(f'cantidad_{producto_id}', 1) or 1
-                                importacion = request.POST.get(f'importacion_{producto_id}', 0) or 0
+                                exportacion = request.POST.get(f'exportacion_{producto_id}', 0) or 0
                                 print(
-                                    f"Creando: cotizacion_id={objeto.pk}, producto_id={producto_id}, cantidad={cantidad}, importacion={importacion}")
+                                    f"Creando: cotizacion_id={objeto.pk}, producto_id={producto_id}, cantidad={cantidad}, exportacion={exportacion}")
                                 try:
                                     obj_creado = modelo_lin.objects.create(**{
                                         campo_obj + '_id': objeto.pk,
                                         campo_prod + '_id': producto_id,
                                         'cantidad': cantidad,
-                                        'importacion': importacion,
+                                        'exportacion': exportacion,
                                     })
                                     print(f"Creado OK: {obj_creado.pk}")
                                 except Exception as e:
