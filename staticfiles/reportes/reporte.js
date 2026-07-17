@@ -169,6 +169,12 @@ function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
              value="0" min="0"
              onchange="lineasActualizar('${nombre}')" />
     </td>
+    <td>
+      <input type="number" class="linea-margen"
+             name="margen_${productoId}"
+             value="0" min="0"
+             onchange="lineasActualizar('${nombre}')" />
+    </td>
     <td class="linea-costo-venta">$0</td>
     <td class="linea-subtotal">$${costo}</td>
     <td>
@@ -194,6 +200,14 @@ function lineasEliminar(nombre, btn) {
   row.remove();
   lineasActualizar(nombre);
 }
+
+function formatoMoneda(valor) {
+    return '$' + valor.toLocaleString('es-MX', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
 function redondear(valor, decimales) {
   return Math.round(valor * Math.pow(10, decimales)) / Math.pow(10, decimales);
 }
