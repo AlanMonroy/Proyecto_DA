@@ -1192,23 +1192,6 @@ def pdf_cotizacion(request, pk):
     dec  = DecimalField(max_digits=20, decimal_places=2)
     cien = Cast(Value(100), output_field=dec)
 
-    """cotizacion = Cotizaciones.objects.annotate(
-        costo_partida=Sum(
-            ExpressionWrapper(
-                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
-                output_field=dec
-            )
-        )
-    ).annotate(
-        venta_partida=ExpressionWrapper(
-            F('costo_partida') / NullIf(
-                (cien - Cast(F('margen'), output_field=dec)) / cien,
-                Cast(Value(0), output_field=dec)
-            ),
-            output_field=dec
-        )
-    ).get(pk=pk)"""
-
     cotizacion = Cotizaciones.objects.annotate(
         costo_unitario=Sum(
             ExpressionWrapper(
