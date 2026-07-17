@@ -8,6 +8,7 @@ from .views_crud import form_crear, form_editar, form_eliminar, exportar_csv
 from users.models import Usuario, Rol
 from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos
 import time
+from decimal import Decimal, ROUND_HALF_UP
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -946,19 +947,13 @@ def reporte_cotizaciones(request):
     cien = Cast(Value(100), output_field=dec)
 
     qs = Cotizaciones.objects.annotate(
-        costo_partida=Sum(
+        costo_unitario=Sum(
             ExpressionWrapper(
-                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)), Cast(Value(0), output_field=dec)),
                 output_field=dec
-            )
-        )
-    ).annotate(
-        venta_partida=ExpressionWrapper(
-            F('costo_partida') / NullIf(
-                (cien - Cast(F('margen'), output_field=dec)) / cien,
-                Cast(Value(0), output_field=dec)
             ),
-            output_field=dec
+            distinct=True  # ← agrega esto
         )
     ).all()
 
@@ -984,16 +979,36 @@ def reporte_cotizaciones(request):
     if per_page not in per_page_opciones:
         per_page = 10
 
-    paginator = Paginator(qs, per_page)
+    # Calcular totales ANTES de paginar
+    qs_list = list(qs)  # ← convierte a lista
+    for cotizacion in qs_list:
+        productos = CotizacionProductos.objects.filter(
+            cotizacion_id=cotizacion.pk
+        ).select_related('producto')
+
+        total_partida = Decimal('0')
+        for p in productos:
+            cantidad = p.cantidad or 0
+            costo = p.producto.costo or 0
+            exportacion = p.exportacion or 0
+            margen = p.margen or 0
+            if margen != 100:
+                costo_unitario = (
+                        (Decimal(str(costo)) * Decimal(str(exportacion))) /
+                        (Decimal('1') - (Decimal(str(margen)) / Decimal('100')))
+                ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+                total_partida += (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+
+        cotizacion.total = total_partida
+    # Paginar la lista con totales ya calculados
+    paginator = Paginator(qs_list, per_page)
     registros = paginator.get_page(page)
 
     columnas = [
         {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
-        {'campo': 'costo_partida', 'label': 'Costo de Partida', 'tipo': 'moneda', 'ordenable': True},
-        {'campo': 'margen', 'label': 'Margen', 'tipo': 'numero', 'ordenable': True},
-        {'campo': 'venta_partida', 'label': 'Venta de partida', 'tipo': 'numero', 'ordenable': True},
+        {'campo': 'total', 'label': 'Total', 'tipo': 'moneda', 'ordenable': True},
         {'campo': 'fecha_creacion', 'label': 'Creado', 'tipo': 'datetime', 'ordenable': True},
     ]
 
@@ -1053,22 +1068,7 @@ def get_campos_cotizaciones():
             'campo_prod': 'producto',
             'queryset': Productos.objects.all().order_by('nombre'),
             'nombre_campo_total': 'Costo de partida total',
-            'valor_campo_total': 'costo_partida',
-        },
-        {
-            'nombre': 'margen',
-            'label': 'Margen',
-            'tipo': 'number',
-            'requerido': False,
-            'ancho': 'medio',
-        },
-        {
-            'nombre': 'venta_partida',
-            'label': 'Venta de partida',
-            'tipo': 'readonly',
-            'requerido': False,
-            'ancho': 'medio',
-            'campo_valor': 'venta_partida',
+            'valor_campo_total': 'total',
         },
     ]
 
@@ -1084,34 +1084,54 @@ def create_cotizacion(request):
 
 @login_requerido
 def edit_cotizacion(request, pk):
-    dec = DecimalField(max_digits=20, decimal_places=2)
+    dec  = DecimalField(max_digits=20, decimal_places=2)
     cien = Cast(Value(100), output_field=dec)
 
     qs = Cotizaciones.objects.annotate(
-        costo_partida=Sum(
+        costo_unitario=Sum(
             ExpressionWrapper(
-                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)),
                 output_field=dec
-            )
-        )
-    ).annotate(
-        venta_partida=ExpressionWrapper(
-            F('costo_partida') / NullIf(
-                (cien - Cast(F('margen'), output_field=dec)) / cien,
-                Cast(Value(0), output_field=dec)
             ),
-            output_field=dec
+            distinct=True
         )
-    ).all()
+    )
+
+    # Calcular total solo para esta cotizacion
+    cotizacion = qs.get(pk=pk)
+    productos  = CotizacionProductos.objects.filter(
+        cotizacion_id=pk
+    ).select_related('producto')
+
+    total_partida = Decimal('0')
+    for p in productos:
+        cantidad    = p.cantidad       or 0
+        costo       = p.producto.costo or 0
+        exportacion = p.exportacion    or 0
+        margen      = p.margen         or 0
+        if margen != 100:
+            costo_unitario = (
+                (Decimal(str(costo)) * Decimal(str(exportacion))) /
+                (Decimal('1') - (Decimal(str(margen)) / Decimal('100')))
+            ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+            total_partida += (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+
+    cotizacion.total = total_partida
 
     return form_editar(
         request,
-        model=Cotizaciones,
-        pk=pk,
-        campos_def=get_campos_cotizaciones(),
-        form_titulo='Editar cotizacion',
-        url_lista='reporte_cotizaciones',
-        extra_context={'queryset_editar': qs, 'url_pdf': f'/reportes/cotizaciones/{pk}/pdf/',},
+        model       = Cotizaciones,
+        pk          = pk,
+        campos_def  = get_campos_cotizaciones(),
+        form_titulo = 'Editar cotizacion',
+        url_lista   = 'reporte_cotizaciones',
+        extra_context = {
+            'queryset_editar': qs,
+            'objeto_extra':    cotizacion,
+            'url_pdf':         f'/reportes/cotizaciones/{pk}/pdf/',
+        },
     )
 
 @login_requerido
@@ -1124,19 +1144,25 @@ def exportar_cotizaciones(request):
     cien = Cast(Value(100), output_field=dec)
 
     qs = Cotizaciones.objects.annotate(
-        costo_partida=Sum(
+        costo_unitario=Sum(
             ExpressionWrapper(
-                F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)),
                 output_field=dec
-            )
+            ),
+            distinct=True  # ← agrega esto
         )
     ).annotate(
-        venta_partida=ExpressionWrapper(
-            F('costo_partida') / NullIf(
-                (cien - Cast(F('margen'), output_field=dec)) / cien,
-                Cast(Value(0), output_field=dec)
+        total=Sum(
+            ExpressionWrapper(
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)) *
+                F('cotizacionproductos__cantidad'),
+                output_field=dec
             ),
-            output_field=dec
+            distinct=True
         )
     ).all()
 
@@ -1166,7 +1192,7 @@ def pdf_cotizacion(request, pk):
     dec  = DecimalField(max_digits=20, decimal_places=2)
     cien = Cast(Value(100), output_field=dec)
 
-    cotizacion = Cotizaciones.objects.annotate(
+    """cotizacion = Cotizaciones.objects.annotate(
         costo_partida=Sum(
             ExpressionWrapper(
                 F('cotizacionproductos__cantidad') * F('cotizacionproductos__producto__costo'),
@@ -1180,6 +1206,29 @@ def pdf_cotizacion(request, pk):
                 Cast(Value(0), output_field=dec)
             ),
             output_field=dec
+        )
+    ).get(pk=pk)"""
+
+    cotizacion = Cotizaciones.objects.annotate(
+        costo_unitario=Sum(
+            ExpressionWrapper(
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)),
+                output_field=dec
+            ),
+            distinct=True
+        )
+    ).annotate(
+        total=Sum(
+            ExpressionWrapper(
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)) *
+                F('cotizacionproductos__cantidad'),
+                output_field=dec
+            ),
+            distinct=True
         )
     ).get(pk=pk)
 
@@ -1273,38 +1322,50 @@ def pdf_cotizacion(request, pk):
     # ── Tabla de productos ────────────────────────────────────
     encabezados = [
         Paragraph('Producto', estilo_th),
-        Paragraph('Costo<br/>Unit.', estilo_th),
+        Paragraph('Costo', estilo_th),
         Paragraph('Cantidad', estilo_th),
         Paragraph('Exportacion', estilo_th),
-        Paragraph('Costo de<br/>Venta', estilo_th),
-        Paragraph('Costo de partida<br/>por producto', estilo_th),
+        Paragraph('Margen', estilo_th),
+        Paragraph('Costo<br/>Unitario', estilo_th),
+        Paragraph('Total(USD)', estilo_th),
     ]
 
     filas = [encabezados]
 
+    total_partida = 0
+
     for p in productos:
-        costo_unit = p.producto.costo or 0
+        cantidad = p.cantidad or 0
+        costo = p.producto.costo or 0
         exportacion = p.exportacion or 0
-        costo_venta = costo_unit * exportacion
-        costo_partida_by_producto = costo_unit * p.cantidad
+        margen = p.margen or 0
+        costo_unitario = (
+            (costo * exportacion) /
+            (Decimal('1') - (margen / Decimal('100')))
+        ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+
+        total = (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+        total_partida += total
 
         filas.append([
             Paragraph(p.producto.nombre, estilo_td),
-            Paragraph(f'${costo_unit:,.2f}', estilo_td_derecha),
-            Paragraph(str(p.cantidad), estilo_td_derecha),
+            Paragraph(f'${costo:,.2f}', estilo_td_derecha),
+            Paragraph(str(cantidad), estilo_td_derecha),
             Paragraph(str(exportacion), estilo_td_derecha),
-            Paragraph(f'${costo_venta:,.2f}', estilo_td_derecha),
-            Paragraph(f'${costo_partida_by_producto:,.2f}', estilo_td_derecha),
+            Paragraph(str(margen), estilo_td_derecha),
+            Paragraph(f'${costo_unitario:,.2f}', estilo_td_derecha),
+            Paragraph(f'${total:,.2f}', estilo_td_derecha),
         ])
 
     #tabla = Table(filas, colWidths=[2.0*inch, 1.0*inch, 1.0*inch, 1.2*inch, 0.8*inch, 1.0*inch])
     tabla = Table(filas, colWidths=[
         1.8 * inch,  # Producto
-        0.9 * inch,  # Costo Unit.
+        0.9 * inch,  # Costo
         0.7 * inch,  # Cantidad
-        0.9 * inch,  # Exportacion
-        0.9 * inch,  # Costo de Venta
-        1.1 * inch,  # Costo de partida
+        0.9 * inch,  # Exportación
+        0.7 * inch,  # Margen
+        0.9 * inch,  # Costo unitario
+        1.1 * inch,  # Total
     ])
 
     tabla.setStyle(TableStyle([
@@ -1331,14 +1392,10 @@ def pdf_cotizacion(request, pk):
     story.append(Spacer(1, 0.3*inch))
 
     # ── Resumen ───────────────────────────────────────────────
-    costo   = cotizacion.costo_partida  or 0
-    margen  = cotizacion.margen         or 0
-    venta   = cotizacion.venta_partida  or 0
+    costo   = total_partida or 0
 
     resumen = [
         ['Costo de partida:',  f'${costo:,.2f}'],
-        ['Margen:',            f'{margen}'],
-        ['Venta de partida:',  f'${venta:,.2f}'],
     ]
 
     tabla_resumen = Table(resumen, colWidths=[4.5*inch, 2.5*inch])

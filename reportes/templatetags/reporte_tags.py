@@ -9,8 +9,14 @@ register = template.Library()
 @register.filter(name='get_attr')
 def get_attr(obj, attr):
     try:
-        return getattr(obj, attr, '—')
-    except Exception:
+        valor = getattr(obj, attr, None)
+        if attr == 'total':
+            print(f"get_attr total: obj={obj}, valor={valor}, dict={obj.__dict__.get('total')}")
+        if valor is not None:
+            return valor
+        return obj.__dict__.get(attr, '—')
+    except Exception as e:
+        print(f"get_attr error: {e}")
         return '—'
 
 @register.filter

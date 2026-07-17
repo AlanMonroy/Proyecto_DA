@@ -5,6 +5,7 @@ Importa y usa en cualquier app de reportes.
 from django.shortcuts import render, get_object_or_404
 import csv
 from django.http import HttpResponse
+from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 
 
@@ -56,11 +57,17 @@ def get_form_campos(campos, objeto=None):
                     {
                         'producto_id': l.producto_id,
                         'nombre': l.producto.nombre,
-                        'costo': l.producto.costo,
-                        'cantidad': l.cantidad,
-                        'exportacion': l.exportacion,
-                        'costo_venta': l.producto.costo * l.exportacion if l.exportacion else 0,
-                        'subtotal': l.producto.costo * l.cantidad,
+                        'costo': l.producto.costo or Decimal('1'),
+                        'cantidad': l.cantidad or Decimal('1'),
+                        'exportacion': l.exportacion or Decimal('1'),
+                        'margen': l.margen or Decimal('1'),
+                        'costo_unitario': (
+                            costo_unitario := (
+                                ((l.producto.costo or Decimal('1')) * (l.exportacion or Decimal('1'))) /
+                                (Decimal('1') - ((l.margen or Decimal('1'))/ Decimal('100')))
+                            ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+                        ),
+                        'subtotal': (costo_unitario * l.cantidad).quantize(Decimal('0.00'),rounding=ROUND_HALF_UP),
                     }
                     for l in lineas_qs
                 ]
@@ -141,7 +148,7 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                                 })
 
                 # Guardar lineas (relaciones con cantidad)
-                for campo in campos:
+                """for campo in campos:
                     if campo.get('tipo') == 'lineas' and campo.get('especial'):
                         nombre     = campo['nombre']
                         modelo_lin = campo.get('modelo_lineas')
@@ -155,7 +162,37 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                                     campo_obj + '_id': obj.pk,
                                     campo_prod + '_id': producto_id,
                                     'cantidad': cantidad,
-                                })
+                                })"""
+
+                # Guardar lineas (relaciones con cantidad)
+                for campo in campos:
+                    if campo.get('tipo') == 'lineas' and campo.get('especial'):
+                        nombre = campo['nombre']
+                        modelo_lin = campo.get('modelo_lineas')
+                        campo_obj = campo.get('campo_obj')
+                        campo_prod = campo.get('campo_prod')
+                        if modelo_lin and campo_obj and campo_prod:
+                            modelo_lin.objects.filter(**{campo_obj + '_id': obj.pk}).delete()
+                            print(f"Eliminados registros de {modelo_lin} para pk={obj.pk}")
+                            productos = request.POST.getlist(nombre + '_producto')
+                            print(f"Intentando crear {len(productos)} productos")
+                            for producto_id in productos:
+                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1) or 1
+                                exportacion = request.POST.get(f'exportacion_{producto_id}', 0) or 0
+                                margen = request.POST.get(f'margen_{producto_id}', 0) or 0
+                                print(
+                                    f"Creando: cotizacion_id={obj.pk}, producto_id={producto_id}, cantidad={cantidad}, exportacion={exportacion}, margen={margen}")
+                                try:
+                                    obj_creado = modelo_lin.objects.create(**{
+                                        campo_obj + '_id': obj.pk,
+                                        campo_prod + '_id': producto_id,
+                                        'cantidad': cantidad,
+                                        'exportacion': exportacion,
+                                        'margen': margen,
+                                    })
+                                    print(f"Creado OK: {obj_creado.pk}")
+                                except Exception as e:
+                                    print(f"Error al crear: {e}")
 
                 response = HttpResponse(status=204)
                 response['HX-Trigger'] = 'refreshTabla'
@@ -192,7 +229,11 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                 extra_context=None):
 
     queryset = extra_context.pop('queryset_editar', None) if extra_context else None
-    if queryset:
+    objeto_extra = extra_context.pop('objeto_extra', None) if extra_context else None
+
+    if objeto_extra:
+        objeto = objeto_extra  # ← usar objeto con total calculado
+    elif queryset:
         objeto = get_object_or_404(queryset, pk=pk) #Usar query con datos agregados
     else:
         objeto = get_object_or_404(model, pk=pk) #usar model normal
@@ -276,14 +317,16 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                             for producto_id in productos:
                                 cantidad = request.POST.get(f'cantidad_{producto_id}', 1) or 1
                                 exportacion = request.POST.get(f'exportacion_{producto_id}', 0) or 0
+                                margen = request.POST.get(f'margen_{producto_id}', 0) or 0
                                 print(
-                                    f"Creando: cotizacion_id={objeto.pk}, producto_id={producto_id}, cantidad={cantidad}, exportacion={exportacion}")
+                                    f"Creando: cotizacion_id={objeto.pk}, producto_id={producto_id}, cantidad={cantidad}, exportacion={exportacion}, margen={margen}")
                                 try:
                                     obj_creado = modelo_lin.objects.create(**{
                                         campo_obj + '_id': objeto.pk,
                                         campo_prod + '_id': producto_id,
                                         'cantidad': cantidad,
                                         'exportacion': exportacion,
+                                        'margen': margen,
                                     })
                                     print(f"Creado OK: {obj_creado.pk}")
                                 except Exception as e:

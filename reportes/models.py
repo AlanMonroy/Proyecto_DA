@@ -251,6 +251,7 @@ class CotizacionProductos(models.Model):
     )
     cantidad = models.DecimalField(max_digits=10, decimal_places=0)
     exportacion = models.DecimalField(max_digits=10, decimal_places=2)
+    margen = models.DecimalField(max_digits=10, decimal_places=0)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

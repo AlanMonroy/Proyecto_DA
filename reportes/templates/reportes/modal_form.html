@@ -212,11 +212,12 @@
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>Costo unit.</th>
+                <th>Costo</th>
                 <th>Cantidad</th>
                 <th>Exportacion</th>
-                <th>Costo de venta</th>
-                <th>Costo de partida por producto</th>
+                <th>Margen</th>
+                <th>Costo Unitario</th>
+                <th>Total(USD)</th>
                 <th></th>
               </tr>
             </thead>
@@ -232,12 +233,18 @@
                          onchange="lineasActualizar('{{ campo.nombre }}')"/>
                 </td>
                 <td>
-                  <input type="number" class="linea-importacion"
+                  <input type="number" class="linea-exportacion"
                          name="exportacion_{{ linea.producto_id }}"
                          value="{{ linea.exportacion|default:0 }}" min="1"
                          onchange="lineasActualizar('{{ campo.nombre }}')"/>
                 </td>
-                <td class="linea-costo-venta">${{ linea.costo_venta }}</td>
+                <td>
+                  <input type="number" class="linea-margen"
+                         name="margen_{{ linea.producto_id }}"
+                         value="{{ linea.margen|default:0 }}" min="1"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                </td>
+                <td class="linea-costo-venta">${{ linea.costo_unitario }}</td>
                 <td class="linea-subtotal">${{ linea.subtotal }}</td>
                 <td>
                   <button type="button" class="linea-eliminar"

@@ -164,8 +164,14 @@ function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
              onchange="lineasActualizar('${nombre}')" />
     </td>
     <td>
-      <input type="number" class="linea-importacion"
+      <input type="number" class="linea-exportacion"
              name="exportacion_${productoId}"
+             value="0" min="0"
+             onchange="lineasActualizar('${nombre}')" />
+    </td>
+    <td>
+      <input type="number" class="linea-margen"
+             name="margen_${productoId}"
              value="0" min="0"
              onchange="lineasActualizar('${nombre}')" />
     </td>
@@ -195,21 +201,39 @@ function lineasEliminar(nombre, btn) {
   lineasActualizar(nombre);
 }
 
+function formatoMoneda(valor) {
+    return '$' + valor.toLocaleString('es-MX', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function redondear(valor, decimales) {
+  return Math.round(valor * Math.pow(10, decimales)) / Math.pow(10, decimales);
+}
+
 function lineasActualizar(nombre) {
   const body  = document.getElementById('lineas-body-' + nombre);
   const total = document.getElementById('lineas-total-' + nombre);
   let suma = 0;
 
   body.querySelectorAll('.linea-row').forEach(function(row) {
-    const costo    = parseFloat(row.querySelector('.linea-costo').textContent.replace('$','')) || 0;
-    const cantidad = parseInt(row.querySelector('.linea-cantidad').value) || 1;
-    const exportacion = parseInt(row.querySelector('.linea-importacion').value) || 0;
-    const costo_venta = costo * exportacion;
-    const subtotal = costo * cantidad;
-    row.querySelector('.linea-costo-venta').textContent = '$' + costo_venta.toLocaleString();
-    row.querySelector('.linea-subtotal').textContent = '$' + subtotal.toLocaleString();
-    suma += subtotal;
+    const costo       = parseFloat(row.querySelector('.linea-costo').textContent.replace('$','').replace(',','')) || 0;
+    const cantidad    = parseInt(row.querySelector('.linea-cantidad').value)      || 0;
+    const exportacion = parseFloat(row.querySelector('.linea-exportacion').value) || 0;
+    const margen      = parseFloat(row.querySelector('.linea-margen').value)      || 0;
+
+    const divisor        = 1 - (margen / 100);
+    const costo_unitario = (divisor !== 0 && exportacion !== 0)
+      ? redondear((costo * exportacion) / divisor, 2)  // ← redondear por línea
+      : 0;
+
+    const subtotal = redondear(costo_unitario * cantidad, 2);  // ← redondear por línea
+
+    row.querySelector('.linea-costo-venta').textContent = formatoMoneda(costo_unitario);
+    row.querySelector('.linea-subtotal').textContent    = formatoMoneda(subtotal);
+    suma = redondear(suma + subtotal, 2);  // ← redondear la suma acumulada
   });
 
-  total.textContent = '$' + suma.toLocaleString();
+  if (total) total.textContent = formatoMoneda(suma);
 }
