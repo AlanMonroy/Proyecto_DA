@@ -35,4 +35,5 @@ urlpatterns = [
     path('cotizaciones/<int:pk>/eliminar/', views.delete_cotizacion, name='delete_cotizacion'),
     path('cotizaciones/exportar/', views.exportar_cotizaciones, name='exportar_cotizaciones'),
     path('cotizaciones/<int:pk>/pdf/', views.pdf_cotizacion, name='pdf_cotizacion'),
+    path('cotizaciones/formato_pdf/', views.edit_formato_pdf, name='edit_formato_pdf'),
 ]

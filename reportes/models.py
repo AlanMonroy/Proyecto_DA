@@ -261,3 +261,22 @@ class CotizacionProductos(models.Model):
     def __str__(self):
         return f'{self.producto} x {self.cantidad}'
 
+class FormatoPdf(models.Model):
+    formato_id = models.BigAutoField(primary_key=True)
+    empresa_imagen = models.TextField(null=True, blank=True)
+    empresa_ubicacion = models.TextField(null=True, blank=True)
+    empresa_email = models.TextField(null=True, blank=True)
+    empresa_web = models.TextField(null=True, blank=True)
+    empresa_telefono = models.TextField(null=True, blank=True)
+    contacto_nombre = models.TextField(null=True, blank=True)
+    contacto_telefono = models.TextField(null=True, blank=True)
+    contacto_ubicacion = models.TextField(null=True, blank=True)
+    valido = models.DecimalField(max_digits=10, decimal_places=0)
+
+    class Meta:
+        db_table = 'formato_pdf'
+        managed = False
+
+    def __str__(self):
+        return self.empresa_web
+

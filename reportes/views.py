@@ -6,9 +6,12 @@ from django.db.models.functions import Abs, NullIf, Cast
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar, exportar_csv
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos, FormatoPdf
 import time
 from decimal import Decimal, ROUND_HALF_UP
+from supabase import create_client
+from django.conf import settings
+import os
 
 # ── Ejemplo: reporte de usuarios ─────────────────────────────────
 # Adapta este patrón para cualquier modelo/tabla que necesites.
@@ -1017,21 +1020,22 @@ def reporte_cotizaciones(request):
     ]
 
     context = {
-        'registros':           registros,
-        'total_registros':     paginator.count,
-        'columnas':            columnas,
-        'columnas_filtrables': columnas_filtrables,
-        'per_page':            per_page,
-        'per_page_opciones':   per_page_opciones,
-        'reporte_titulo':      'Cotizaciones',
-        'reporte_subtitulo':   'Gestión de cotizaciones',
-        'reporte_breadcrumb':  'Inicio / Cotizaciones',
-        'puede_crear':         request.session.get('usuario_rol') == 0,
-        'puede_editar':        request.session.get('usuario_rol') == 0,
-        'puede_eliminar':      request.session.get('usuario_rol') == 0,
-        'puede_exportar':      True,
+        'registros':            registros,
+        'total_registros':      paginator.count,
+        'columnas':             columnas,
+        'columnas_filtrables':  columnas_filtrables,
+        'per_page':             per_page,
+        'per_page_opciones':    per_page_opciones,
+        'reporte_titulo':       'Cotizaciones',
+        'reporte_subtitulo':    'Gestión de cotizaciones',
+        'reporte_breadcrumb':   'Inicio / Cotizaciones',
+        'puede_crear':          request.session.get('usuario_rol') == 0,
+        'puede_editar':         request.session.get('usuario_rol') == 0,
+        'puede_eliminar':       request.session.get('usuario_rol') == 0,
+        'puede_exportar':       True,
         'url_crear':            '/reportes/cotizaciones/crear/',
         'url_exportar':         '/reportes/cotizaciones/exportar/',
+        'url_formato_pdf':      '/reportes/cotizaciones/formato_pdf/',
         'btn_crear_texto':      'Nueva Cotizacion',
     }
     print(time.perf_counter() - inicio)
@@ -1185,6 +1189,121 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
 import io
+
+def get_campos_formato_pdf():
+    return [
+        {
+            'nombre': 'empresa_email',
+            'label': 'Empresa email',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Email de la empresa',
+        },
+        {
+            'nombre': 'empresa_web',
+            'label': 'Empresa web',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Web de la empresa',
+        },
+        {
+            'nombre': 'empresa_telefono',
+            'label': 'Empresa telefono',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Telefono de la empresa',
+        },
+        {
+            'nombre': 'empresa_ubicacion',
+            'label': 'Empresa ubicacion',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Ubicacion de la empresa',
+        },
+        {
+            'nombre': 'contacto_nombre',
+            'label': 'Contacto nombre',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del contacto',
+        },
+        {
+            'nombre': 'contacto_telefono',
+            'label': 'Contacto telefono',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Telefono del contacto',
+        },
+        {
+            'nombre': 'contacto_ubicacion',
+            'label': 'Contacto ubicacion',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Ubicacion del contacto',
+        },
+        {
+            'nombre': 'valido',
+            'label': 'Valido por',
+            'tipo': 'decimal',
+            'requerido': True,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'empresa_imagen',
+            'label': 'Logo empresa',
+            'tipo': 'file',
+            'requerido': False,
+            'ancho': 'completo',
+        },
+    ]
+
+@login_requerido
+def edit_formato_pdf(request):
+    formato, created = FormatoPdf.objects.get_or_create(pk=1)
+
+    if request.method == 'POST':
+        imagen = request.FILES.get('empresa_imagen')
+        if imagen:
+            supabase = create_client(
+                settings.SUPABASE_URL,
+                settings.SUPABASE_SERVICE_ROLE_KEY
+            )
+            nombre_archivo = imagen.name
+            extension = os.path.splitext(imagen.name)[1]  # .png, .jpg, etc.
+            ruta = f"formato_pdf/logo_empresa{extension}"
+            ruta = f"formato_pdf/{nombre_archivo}"
+
+            supabase.storage.from_('empresas').upload(
+                path=ruta,
+                file=imagen.read(),
+                file_options={
+                    'content-type': imagen.content_type,
+                    'upsert': 'true'
+                }
+            )
+
+            # Obtener URL pública y guardar en el modelo
+            url_publica = supabase.storage.from_('empresas').get_public_url(ruta)
+            #print(f'URL_IMAGEN: {url_publica}')
+            formato.empresa_imagen = url_publica
+            formato.save()
+
+    return form_editar(
+        request,
+        model       = FormatoPdf,
+        pk          = formato.pk,
+        campos_def  = get_campos_formato_pdf(),
+        form_titulo = 'Formato PDF Cotizaciones',
+        url_lista   = 'reporte_cotizaciones',
+    )
+
 
 @login_requerido
 def pdf_cotizacion(request, pk):

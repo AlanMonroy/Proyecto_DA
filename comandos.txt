@@ -1,0 +1,3 @@
+--guardar archivos estaticos
+python manage.py collectstatic --clear --noinput -v 2
+pip freeze > requirements.txt

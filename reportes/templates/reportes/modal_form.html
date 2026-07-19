@@ -30,6 +30,7 @@
     <form hx-post="{{ form_action }}"
           hx-target="#htmx-modal"
           hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
           novalidate>
       {% csrf_token %}
       {% if objeto %}
@@ -292,6 +293,22 @@
           </div>
 
         </div>
+
+          {% elif campo.tipo == 'file' %}
+            <input
+                type="file"
+                id="field-{{ campo.nombre }}"
+                name="{{ campo.nombre }}"
+                accept="image/*"
+                onchange="previewImagen(this, 'preview-{{ campo.nombre }}')"
+            >
+          {% if objeto and objeto|get_attr:campo.nombre %}
+            <img
+                id="preview-{{ campo.nombre }}"
+                src="{{ objeto|get_attr:campo.nombre }}"
+                class="preview-imagen"
+            >
+          {% endif %}
 
           <!-- COLOR -->
           {% elif campo.tipo == 'color' %}

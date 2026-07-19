@@ -364,3 +364,14 @@
   display: flex;
   align-items: center;
 }
+
+.preview-imagen {
+    margin-top: .5rem;
+    max-width: 220px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    border-radius: 4px;
+}

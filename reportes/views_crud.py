@@ -254,6 +254,9 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
             if campo.get('especial'):
                 continue
 
+            if tipo == 'file':
+                continue
+
             valor = request.POST.get(nombre, '').strip()
 
             if requerido and not valor:
