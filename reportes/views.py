@@ -1370,7 +1370,7 @@ def texto_a_parrafo(texto, estilo):
     return Paragraph(texto_html, estilo)
 
 @login_requerido
-def pdf_cotizacion(request, pk):
+def pdf_cotizacion_v1(request, pk):
     # Obtener cotizacion con productos
     dec  = DecimalField(max_digits=20, decimal_places=2)
     cien = Cast(Value(100), output_field=dec)
@@ -1647,6 +1647,263 @@ def pdf_cotizacion(request, pk):
     story.append(texto_a_parrafo(cotizacion.pie_cotizacion, estilo_textarea))
 
     # ── Generar PDF ───────────────────────────────────────────
+    doc.build(story)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="cotizacion_{cotizacion.nombre}.pdf"'
+    return response
+
+def pdf_cotizacion(request, pk):
+    dec  = DecimalField(max_digits=20, decimal_places=2)
+    print(f"PDF solicitado para pk={pk}")
+    cotizacion = Cotizaciones.objects.annotate(
+        costo_unitario=Sum(
+            ExpressionWrapper(
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)),
+                output_field=dec
+            ),
+            distinct=True
+        )
+    ).annotate(
+        total=Sum(
+            ExpressionWrapper(
+                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
+                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
+                       Cast(Value(0), output_field=dec)) *
+                F('cotizacionproductos__cantidad'),
+                output_field=dec
+            ),
+            distinct=True
+        )
+    ).get(pk=pk)
+
+    productos   = CotizacionProductos.objects.filter(
+        cotizacion_id=pk
+    ).select_related('producto')
+    formato_pdf = FormatoPdf.objects.get(pk=1)
+
+    # ── Logo ──────────────────────────────────────────────────
+    logo = None
+    if formato_pdf.empresa_imagen:
+        try:
+            resp        = requests.get(formato_pdf.empresa_imagen, timeout=10)
+            resp.raise_for_status()
+            img_bytes   = BytesIO(resp.content)
+            reader      = ImageReader(img_bytes)
+            ancho, alto = reader.getSize()
+            logo        = Image(img_bytes)
+            escala      = min((2*inch)/ancho, (1*inch)/alto)
+            logo.drawWidth  = ancho * escala
+            logo.drawHeight = alto  * escala
+        except Exception:
+            logo = None
+
+    # ── Buffer y doc ──────────────────────────────────────────
+    buffer = io.BytesIO()
+    doc    = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        rightMargin=0.6*inch, leftMargin=0.6*inch,
+        topMargin=0.6*inch,   bottomMargin=0.6*inch
+    )
+    styles = getSampleStyleSheet()
+    story  = []
+
+    # ── Estilos ───────────────────────────────────────────────
+    def estilo(nombre, **kw):
+        return ParagraphStyle(nombre, parent=styles['Normal'], **kw)
+
+    e_normal  = estilo('normal',   fontSize=8,  leading=11, textColor=colors.HexColor('#1c1c1c'))
+    e_bold    = estilo('bold',     fontSize=8,  leading=11, textColor=colors.HexColor('#1c1c1c'), fontName='Helvetica-Bold')
+    e_small   = estilo('small',    fontSize=7,  leading=10, textColor=colors.HexColor('#444444'))
+    e_titulo  = estilo('titulo',   fontSize=10, leading=13, textColor=colors.HexColor('#1a1a2e'), fontName='Helvetica-Bold')
+    e_servicio= estilo('servicio', fontSize=9,  leading=12, textColor=colors.HexColor('#1c1c1c'), fontName='Helvetica-Bold')
+    e_desc    = estilo('desc',     fontSize=8,  leading=11, textColor=colors.HexColor('#1c1c1c'))
+    e_th      = ParagraphStyle('th', fontSize=8, textColor=colors.white,
+                               fontName='Helvetica-Bold', alignment=1, leading=10)
+    e_td      = ParagraphStyle('td', fontSize=8, textColor=colors.HexColor('#1c1c1c'),
+                               fontName='Helvetica', leading=10)
+    e_td_r    = ParagraphStyle('td_r', fontSize=8, textColor=colors.HexColor('#1c1c1c'),
+                               fontName='Helvetica', leading=10, alignment=2)
+
+    # ── Bloque empresa (izquierda) ────────────────────────────
+    empresa_items = []
+    if logo:
+        empresa_items.append(logo)
+        empresa_items.append(Spacer(1, 4))
+    empresa_items += [
+        Paragraph(formato_pdf.empresa_ubicacion or '', e_small),
+        Paragraph(formato_pdf.empresa_email     or '', e_small),
+        Paragraph(formato_pdf.empresa_web       or '', e_small),
+        Paragraph(formato_pdf.empresa_telefono  or '', e_small),
+    ]
+
+    # ── Bloque contacto + cliente (derecha) ───────────────────
+    servicio_txt = cotizacion.proyecto.nombre if cotizacion.proyecto_id else (cotizacion.servicio or '')
+    fecha_txt    = cotizacion.fecha_creacion.strftime('%d/%m/%y') if cotizacion.fecha_creacion else ''
+
+    tabla_derecha_data = [
+        [
+            Paragraph('<b>CONTACTO</b>', e_bold),
+            Paragraph('<b>CLIENTE</b>', e_bold),
+        ],
+        [
+            Paragraph(formato_pdf.contacto_nombre   or '', e_normal),
+            Paragraph(cotizacion.cliente.nombre_cliente if cotizacion.cliente_id else '', e_normal),
+        ],
+        [
+            Paragraph(f'Tel. {formato_pdf.contacto_telefono or ""}', e_normal),
+            Paragraph('', e_normal),
+        ],
+        [
+            Paragraph(formato_pdf.contacto_ubicacion or '', e_normal),
+            Paragraph(cotizacion.cliente.direccion if cotizacion.cliente_id else '', e_normal),
+        ],
+        [
+            Paragraph('<b>Cotización #:</b>', e_bold),
+            Paragraph(cotizacion.nombre or '', e_normal),
+        ],
+        [
+            Paragraph('<b>Fecha:</b>', e_bold),
+            Paragraph(fecha_txt, e_normal),
+        ],
+        [
+            Paragraph('<b>Valido por:</b>', e_bold),
+            Paragraph(f'{formato_pdf.valido or ""} días', e_normal),
+        ],
+    ]
+
+    tabla_derecha = Table(tabla_derecha_data, colWidths=[1.6*inch, 1.8*inch])
+    tabla_derecha.setStyle(TableStyle([
+        ('FONTNAME',      (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE',      (0, 0), (-1, -1), 8),
+        ('TOPPADDING',    (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LINEBELOW',     (0, 3), (-1, 3),  0.5, colors.HexColor('#cccccc')),
+        ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#f0ece4')),
+    ]))
+
+    # ── Tabla encabezado 2 columnas ───────────────────────────
+    empresa_col = empresa_items  # lista de flowables
+
+    header_table = Table(
+        [[empresa_col, tabla_derecha]],
+        colWidths=[3.8*inch, 3.4*inch]
+    )
+    header_table.setStyle(TableStyle([
+        ('VALIGN',     (0, 0), (-1, -1), 'TOP'),
+        ('LINEBELOW',  (0, 0), (-1, 0),  1,   colors.HexColor('#1a1a2e')),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    story.append(header_table)
+    story.append(Spacer(1, 0.15*inch))
+
+    # ── Servicio ──────────────────────────────────────────────
+    story.append(Paragraph(f'SERVICIO: {servicio_txt}', e_servicio))
+    story.append(Spacer(1, 0.05*inch))
+
+    # ── Equipo ────────────────────────────────────────────────
+    if cotizacion.equipo:
+        story.append(Paragraph(cotizacion.equipo, e_titulo))
+        story.append(Spacer(1, 0.05*inch))
+
+    # ── Descripción ───────────────────────────────────────────
+    if cotizacion.descripcion:
+        story.append(texto_a_parrafo(cotizacion.descripcion, e_desc))
+        story.append(Spacer(1, 0.1*inch))
+
+    # ── Tabla productos ───────────────────────────────────────
+    encabezados = [
+        Paragraph('Cantidad',        e_th),
+        Paragraph('Producto',        e_th),
+        Paragraph('Costo',           e_th),
+        Paragraph('Exportacion',     e_th),
+        Paragraph('Margen',          e_th),
+        Paragraph('C.Unitario',      e_th),
+        Paragraph('Total (USD)',     e_th),
+    ]
+    filas         = [encabezados]
+    total_partida = Decimal('0')
+
+    for p in productos:
+        cantidad    = Decimal(str(p.cantidad    or 0))
+        costo       = Decimal(str(p.producto.costo or 0))
+        exportacion = Decimal(str(p.exportacion or 0))
+        margen      = Decimal(str(p.margen      or 0))
+
+        divisor = Decimal('1') - (margen / Decimal('100'))
+        costo_unitario = (
+            (costo * exportacion) / divisor
+        ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP) if divisor else Decimal('0')
+
+        total = (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+        total_partida += total
+
+        filas.append([
+            Paragraph(str(int(cantidad)),           e_td_r),
+            Paragraph(p.producto.nombre or '',      e_td),
+            Paragraph(f'$ {costo:,.2f}',            e_td_r),
+            Paragraph(str(exportacion),             e_td_r),
+            Paragraph(f'{margen}%',                 e_td_r),
+            Paragraph(f'$ {costo_unitario:,.2f}',   e_td_r),
+            Paragraph(f'$ {total:,.2f}',            e_td_r),
+        ])
+
+    tabla = Table(filas, colWidths=[
+        0.7*inch,   # Cantidad
+        2.2*inch,   # Producto
+        0.8*inch,   # Costo
+        0.8*inch,   # Exportacion
+        0.65*inch,  # Margen
+        0.85*inch,  # C.Unitario
+        0.9*inch,   # Total
+    ])
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
+        ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
+        ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0, 0), (-1, 0),  8),
+        ('ALIGN',         (0, 0), (-1, 0),  'CENTER'),
+        ('TOPPADDING',    (0, 0), (-1, 0),  6),
+        ('BOTTOMPADDING', (0, 0), (-1, 0),  6),
+        ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE',      (0, 1), (-1, -1), 8),
+        ('ALIGN',         (0, 1), (0, -1),  'CENTER'),
+        ('ALIGN',         (1, 1), (1, -1),  'LEFT'),
+        ('ALIGN',         (2, 1), (-1, -1), 'RIGHT'),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, colors.HexColor('#f7f4ef')]),
+        ('TOPPADDING',    (0, 1), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+        ('LINEBELOW',     (0, 0), (-1, -1), 0.5, colors.HexColor('#e0dbd2')),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    story.append(tabla)
+    story.append(Spacer(1, 0.2*inch))
+
+    # ── Resumen ───────────────────────────────────────────────
+    resumen = Table(
+        [['Total (USD):', f'$ {total_partida:,.2f}']],
+        colWidths=[5.9*inch, 1.3*inch]
+    )
+    resumen.setStyle(TableStyle([
+        ('FONTNAME',      (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0, 0), (-1, -1), 9),
+        ('ALIGN',         (0, 0), (0, 0),   'RIGHT'),
+        ('ALIGN',         (1, 0), (1, 0),   'RIGHT'),
+        ('LINEABOVE',     (0, 0), (-1, 0),  1, colors.HexColor('#1a1a2e')),
+        ('TOPPADDING',    (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(resumen)
+    story.append(Spacer(1, 0.2*inch))
+
+    # ── Pie de cotización ─────────────────────────────────────
+    if cotizacion.pie_cotizacion:
+        story.append(texto_a_parrafo(cotizacion.pie_cotizacion, e_desc))
+
+    # ── Build ─────────────────────────────────────────────────
     doc.build(story)
     buffer.seek(0)
 
