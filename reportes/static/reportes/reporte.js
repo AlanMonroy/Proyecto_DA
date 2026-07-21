@@ -238,7 +238,7 @@ function lineasActualizar(nombre) {
   if (total) total.textContent = formatoMoneda(suma);
 }
 
-function previewImagen(input, previewId) {
+/*function previewImagen(input, previewId) {
     const preview = document.getElementById(previewId);
 
     if (input.files && input.files[0]) {
@@ -250,4 +250,67 @@ function previewImagen(input, previewId) {
 
         reader.readAsDataURL(input.files[0]);
     }
+}*/
+
+function previewImagen(input) {
+
+    const uploader = input.closest(".image-uploader");
+
+    const preview = uploader.querySelector("img");
+    const message = uploader.querySelector(".upload-message");
+    const fileName = uploader.querySelector(".file-name");
+
+
+    if (input.files && input.files[0]) {
+
+        const file = input.files[0];
+
+
+        if (!file.type.startsWith("image/")) {
+
+            alert("Seleccione una imagen válida");
+
+            input.value = "";
+
+            return;
+        }
+
+
+        const reader = new FileReader();
+
+
+        reader.onload = function(e) {
+
+            preview.src = e.target.result;
+
+            preview.classList.remove("hidden");
+
+            message.classList.add("hidden");
+
+            fileName.textContent = file.name;
+
+        };
+
+
+        reader.readAsDataURL(file);
+
+    }
+
+}
+
+function toggleCampoOculto(select) {
+  const campoOculto  = select.dataset.campoOculto;
+  const valorTrigger = select.dataset.valorTrigger;
+  const div          = document.getElementById('campo-' + campoOculto);
+  const input        = div ? div.querySelector('input') : null;
+  console.log('campoOculto:', campoOculto);
+  console.log('div encontrado:', div);
+
+  if (select.value === valorTrigger) {
+    div.style.display = 'block';
+    if (input) input.required = true;
+  } else {
+    div.style.display = 'none';
+    if (input) { input.required = false; input.value = ''; }
+  }
 }

@@ -1046,9 +1046,11 @@ def get_campos_cotizaciones():
         {
             'nombre': 'proyecto',
             'label': 'Proyecto',
-            'tipo': 'select',
+            'tipo': 'select_con_nuevo',
+            'campo_oculto': 'nombre_servicio',
+            'valor_trigger': 'nuevo_servicio',
             'campo_fk': 'proyecto',
-            'requerido': True,
+            'requerido': False,
             'ancho': 'completo',
             'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
         },
@@ -1059,6 +1061,30 @@ def get_campos_cotizaciones():
             'requerido': True,
             'ancho': 'completo',
             'placeholder': 'Nombre de la cotizacion',
+        },
+        {
+            'nombre': 'servicio',
+            'label': 'Servicio',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Servicio de la cotizacion',
+        },
+        {
+            'nombre': 'equipo',
+            'label': 'Equipo',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Equipo de la cotizacion',
+        },
+        {
+            'nombre': 'descripcion',
+            'label': 'Descripcion',
+            'tipo': 'textarea',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Descripcion de la cotizacion',
         },
         {
             'nombre': 'productos',
@@ -1073,6 +1099,14 @@ def get_campos_cotizaciones():
             'queryset': Productos.objects.all().order_by('nombre'),
             'nombre_campo_total': 'Costo de partida total',
             'valor_campo_total': 'total',
+        },
+        {
+            'nombre': 'pie_cotizacion',
+            'label': 'Pie de la cotizacion',
+            'tipo': 'textarea',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Notas, Consideraciones generales, Requerimientos para operacion',
         },
     ]
 
@@ -1185,9 +1219,12 @@ def exportar_cotizaciones(request):
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
+from reportlab.lib.utils import ImageReader
+import requests
+from io import BytesIO
 import io
 
 def get_campos_formato_pdf():
@@ -1275,10 +1312,9 @@ def edit_formato_pdf(request):
                 settings.SUPABASE_URL,
                 settings.SUPABASE_SERVICE_ROLE_KEY
             )
-            nombre_archivo = imagen.name
             extension = os.path.splitext(imagen.name)[1]  # .png, .jpg, etc.
             ruta = f"formato_pdf/logo_empresa{extension}"
-            ruta = f"formato_pdf/{nombre_archivo}"
+            print(f'RUTA: {ruta}')
 
             supabase.storage.from_('empresas').upload(
                 path=ruta,
@@ -1291,7 +1327,7 @@ def edit_formato_pdf(request):
 
             # Obtener URL pública y guardar en el modelo
             url_publica = supabase.storage.from_('empresas').get_public_url(ruta)
-            #print(f'URL_IMAGEN: {url_publica}')
+            print(f'URL_IMAGEN: {url_publica}')
             formato.empresa_imagen = url_publica
             formato.save()
 
@@ -1304,6 +1340,12 @@ def edit_formato_pdf(request):
         url_lista   = 'reporte_cotizaciones',
     )
 
+def texto_a_parrafo(texto, estilo):
+    if not texto:
+        return Paragraph('', estilo)
+    # Reemplaza saltos de línea por <br/>
+    texto_html = texto.replace('\n', '<br/>')
+    return Paragraph(texto_html, estilo)
 
 @login_requerido
 def pdf_cotizacion(request, pk):
@@ -1337,6 +1379,33 @@ def pdf_cotizacion(request, pk):
     productos = CotizacionProductos.objects.filter(
         cotizacion_id=pk
     ).select_related('producto')
+
+    #OBTENER IMAGEN
+    formato_pdf = FormatoPdf.objects.get(pk=1)
+    logo = None
+    if formato_pdf.empresa_imagen:
+        try:
+            response = requests.get(formato_pdf.empresa_imagen, timeout=10)
+            response.raise_for_status()
+
+            imagen_bytes = BytesIO(response.content)
+
+            reader = ImageReader(imagen_bytes)
+            ancho, alto = reader.getSize()
+
+            logo = Image(imagen_bytes)
+
+            # Tamaño máximo permitido
+            max_ancho = 2 * inch
+            max_alto = 1 * inch
+
+            escala = min(max_ancho / ancho, max_alto / alto)
+
+            logo.drawWidth = ancho * escala
+            logo.drawHeight = alto * escala
+
+        except requests.RequestException:
+            logo = None
 
     # Crear PDF en memoria
     buffer = io.BytesIO()
@@ -1381,6 +1450,16 @@ def pdf_cotizacion(request, pk):
         textColor=colors.HexColor('#1c1c1c'),
         spaceAfter=12,
     )
+
+    estilo_textarea = ParagraphStyle(
+        'notas',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#1c1c1c'),
+        leading=12,
+        spaceAfter=6,
+    )
+
     estilo_derecha = ParagraphStyle(
         'derecha',
         parent=styles['Normal'],
@@ -1416,9 +1495,34 @@ def pdf_cotizacion(request, pk):
     )
 
     # ── Encabezado ────────────────────────────────────────────
-    story.append(Paragraph('Cotización', estilo_titulo))
-    story.append(Paragraph(f'Nombre de la cotizacion: {cotizacion.nombre}', estilo_subtitulo))
-    story.append(Paragraph(f'Proyecto de la cotizacion: {cotizacion.proyecto}', estilo_subtitulo))
+    #story.append(Paragraph('Cotización', estilo_titulo))
+    story.append(Paragraph(f'{formato_pdf.empresa_ubicacion}', estilo_label))
+    story.append(Paragraph(f'{formato_pdf.empresa_email}', estilo_label))
+    story.append(Paragraph(f'{formato_pdf.empresa_web}', estilo_label))
+    story.append(Paragraph(f'{formato_pdf.empresa_telefono}', estilo_label))
+
+    if logo:
+        story.append(logo)
+
+    story.append(Paragraph('Contacto', estilo_subtitulo))
+    story.append(Paragraph(f'{formato_pdf.contacto_nombre}', estilo_label))
+    story.append(Paragraph(f'{formato_pdf.contacto_telefono}', estilo_label))
+    story.append(Paragraph(f'{formato_pdf.contacto_ubicacion}', estilo_label))
+
+    story.append(Paragraph('Cliente', estilo_subtitulo))
+    story.append(Paragraph(f'{cotizacion.proyecto.cliente.nombre_cliente}', estilo_label))
+    story.append(Paragraph(f'{cotizacion.proyecto.cliente.telefono_contacto}', estilo_label))
+    story.append(Paragraph(f'{cotizacion.proyecto.cliente.direccion}', estilo_label))
+
+    story.append(Paragraph(f'Cotizacion #: {cotizacion.nombre}', estilo_label))
+    story.append(Paragraph(f'Fecha: {cotizacion.fecha_creacion}', estilo_label))
+    story.append(Paragraph(f'Valido por: {formato_pdf.valido}', estilo_label))
+
+    story.append(Paragraph(f'Servicio: {cotizacion.proyecto.nombre}', estilo_label))
+    story.append(Paragraph(f'Servicio: {cotizacion.servicio}', estilo_label))
+    story.append(Paragraph(f'Equipo: {cotizacion.equipo}', estilo_label))
+    story.append(texto_a_parrafo(cotizacion.descripcion, estilo_textarea))
+
     story.append(Spacer(1, 0.1*inch))
 
     # ── Tabla de productos ────────────────────────────────────
@@ -1497,7 +1601,7 @@ def pdf_cotizacion(request, pk):
     costo   = total_partida or 0
 
     resumen = [
-        ['Costo de partida:',  f'${costo:,.2f}'],
+        ['Total(USD):',  f'${costo:,.2f}'],
     ]
 
     tabla_resumen = Table(resumen, colWidths=[4.5*inch, 2.5*inch])
@@ -1514,6 +1618,8 @@ def pdf_cotizacion(request, pk):
     ]))
 
     story.append(tabla_resumen)
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(texto_a_parrafo(cotizacion.pie_cotizacion, estilo_textarea))
 
     # ── Generar PDF ───────────────────────────────────────────
     doc.build(story)

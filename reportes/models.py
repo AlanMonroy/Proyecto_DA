@@ -230,6 +230,11 @@ class Cotizaciones(models.Model):
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    servicio = models.TextField(null=True, blank=True)
+    equipo = models.TextField(null=True, blank=True)
+    descripcion = models.TextField(null=True, blank=True)
+    pie_cotizacion = models.TextField(null=True, blank=True)
+
     class Meta:
         db_table = 'cotizaciones'
         managed = False

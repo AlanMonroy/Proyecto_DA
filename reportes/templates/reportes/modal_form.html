@@ -41,7 +41,10 @@
       <div class="modal-form-body">
 
         {% for campo in form_campos %}
-        <div class="form-field {% if campo.ancho == 'medio' %}form-field-half{% endif %} {% if campo.ancho == 'completo' %}form-field-full{% endif %}">
+        <div class="form-field {% if campo.ancho == 'medio' %}form-field-half{% endif %} {% if campo.ancho == 'completo' %}form-field-full{% endif %}"
+          id="campo-{{ campo.nombre }}"
+          {% if campo.oculto %}style="display:none;"{% endif %}
+        >
 
           <label for="field-{{ campo.nombre }}">
             {{ campo.label }}
@@ -147,6 +150,33 @@
                         <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
                     {% endfor %}
                 {% endif %}
+            </select>
+
+          {% elif campo.tipo == 'select_con_nuevo' %}
+           <select id="field-{{ campo.nombre }}"
+              name="{{ campo.nombre }}"
+              data-campo-oculto="{{ campo.campo_oculto }}"
+              data-valor-trigger="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+              onchange="toggleCampoOculto(this)"
+              {% if campo.requerido %}required{% endif %}>
+              <option value="">-- Selecciona --</option>
+              <option value="nuevo_servicio">+ Nuevo Servicio</option>
+              {% if objeto %}
+                {% with val=objeto|get_attr:campo.nombre %}
+                  {% with val_pk=val|get_pk %}
+                    {% for opcion in campo.opciones %}
+                      <option value="{{ opcion.valor }}"
+                        {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}>
+                        {{ opcion.label }}
+                      </option>
+                    {% endfor %}
+                  {% endwith %}
+                {% endwith %}
+              {% else %}
+                {% for opcion in campo.opciones %}
+                  <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
+                {% endfor %}
+              {% endif %}
             </select>
 
         <!-- BOOLEAN / CHECKBOX -->
@@ -295,20 +325,45 @@
         </div>
 
           {% elif campo.tipo == 'file' %}
-            <input
+            <!--<input
                 type="file"
                 id="field-{{ campo.nombre }}"
                 name="{{ campo.nombre }}"
                 accept="image/*"
                 onchange="previewImagen(this, 'preview-{{ campo.nombre }}')"
+            >-->
+          <div class="image-uploader">
+            <input
+                id="field-{{ campo.nombre }}"
+                type="file"
+                name="{{ campo.nombre }}"
+                accept="image/*"
+                onchange="previewImagen(this)"
             >
-          {% if objeto and objeto|get_attr:campo.nombre %}
+
+            <label for="field-{{ campo.nombre }}" id="file-drop">
+                <img
+                    id="preview-{{ campo.nombre }}"
+                    src="{{ objeto|get_attr:campo.nombre }}"
+                    class="preview-imagen"
+                >
+                <div class="upload-message">
+                    <span>Arrastra una imagen aquí</span>
+                    <small>o haz click para seleccionar</small>
+                </div>
+
+                <div class="file-name"></div>
+
+            </label>
+
+          </div>
+          <!--{% if objeto and objeto|get_attr:campo.nombre %}
             <img
                 id="preview-{{ campo.nombre }}"
                 src="{{ objeto|get_attr:campo.nombre }}"
                 class="preview-imagen"
             >
-          {% endif %}
+          {% endif %}-->
 
           <!-- COLOR -->
           {% elif campo.tipo == 'color' %}

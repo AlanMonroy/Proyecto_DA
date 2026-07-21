@@ -17,7 +17,7 @@ def get_form_campos(campos, objeto=None):
     """
     for campo in campos:
         # Cargar opciones de select desde queryset
-        if campo.get('tipo') == 'select' and 'queryset' in campo:
+        if campo.get('tipo') in ('select', 'select_con_nuevo') and 'queryset' in campo:
             qs = campo['queryset']
             campo['opciones'] = [
                 {'valor': str(obj.pk), 'label': str(obj)}
@@ -108,9 +108,13 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                     datos[nombre] = float(valor) if tipo == 'decimal' else int(valor)
                 except ValueError:
                     errores[nombre] = 'Valor numérico inválido.'
-            elif tipo == 'select' and valor:
-                campo_fk = campo.get('campo_fk', nombre)
-                datos[campo_fk + '_id'] = valor
+            elif tipo in ('select', 'select_con_nuevo') and valor:
+                valor_trigger = campo.get('valor_trigger')
+                if valor_trigger and valor == valor_trigger:
+                    pass
+                else:
+                    campo_fk = campo.get('campo_fk', nombre)
+                    datos[campo_fk + '_id'] = valor
             elif valor:
                 datos[nombre] = valor
 
@@ -270,9 +274,13 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                     setattr(objeto, nombre, float(valor) if tipo == 'decimal' else int(valor))
                 except ValueError:
                     errores[nombre] = 'Valor numérico inválido.'
-            elif tipo == 'select' and valor:
+            elif tipo in ('select', 'select_con_nuevo') and valor:
+                valor_trigger = campo.get('valor_trigger')
                 campo_fk = campo.get('campo_fk', nombre)
-                setattr(objeto, campo_fk + '_id', valor)
+                if valor_trigger and valor == valor_trigger:
+                    setattr(objeto, campo_fk + '_id', None)
+                else:
+                    setattr(objeto, campo_fk + '_id', valor)
             elif valor:
                 setattr(objeto, nombre, valor)
             elif not requerido:

@@ -365,6 +365,65 @@
   align-items: center;
 }
 
+/*UPLOAD FILE*/
+.image-uploader {
+    width: 100%;
+}
+
+.image-uploader input[type="file"] {
+    display: none;
+}
+
+#file-drop {
+    height: 220px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: .3s;
+}
+
+#file-drop:hover {
+    border-color: #454cad;
+    background: #f4f5ff;
+}
+
+.image-uploader img {
+    max-width: 180px;
+    max-height: 150px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.upload-message {
+    text-align: center;
+    color: #666;
+}
+
+.upload-message span {
+    display: block;
+    font-size: 18px;
+}
+
+.upload-message small {
+    display: block;
+    margin-top: 5px;
+}
+
+.file-name {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
 .preview-imagen {
     margin-top: .5rem;
     max-width: 220px;
