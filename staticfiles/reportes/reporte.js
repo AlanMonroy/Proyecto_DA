@@ -303,14 +303,68 @@ function toggleCampoOculto(select) {
   const valorTrigger = select.dataset.valorTrigger;
   const div          = document.getElementById('campo-' + campoOculto);
   const input        = div ? div.querySelector('input') : null;
-  console.log('campoOculto:', campoOculto);
-  console.log('div encontrado:', div);
 
-  if (select.value === valorTrigger) {
-    div.style.display = 'block';
-    if (input) input.required = true;
-  } else {
-    div.style.display = 'none';
-    if (input) { input.required = false; input.value = ''; }
+  if (div) {
+    if (select.value === valorTrigger) {
+      div.style.display = 'block';
+      if (input) {
+        input.required = true;
+        // Restaurar valor original si existe
+        if (input.dataset.valorOriginal && !input.value) {
+          input.value = input.dataset.valorOriginal;
+        }
+      }
+    } else {
+      div.style.display = 'none';
+      if (input) {
+        input.required = false;
+        // Guardar valor antes de limpiar
+        if (input.value) input.dataset.valorOriginal = input.value;
+        input.value = '';
+      }
+    }
   }
 }
+
+function selectCascada(select) {
+  const campoHijo  = select.dataset.cascadaHijo;
+  const url        = select.dataset.urlCascada;
+  const valorPadre = select.value;
+  const selectHijo = document.getElementById('field-' + campoHijo);
+
+  if (!selectHijo) return;
+
+  // Limpiar hijo pero conservar opción especial si existe
+  const opcionEspecial = selectHijo.dataset.opcionEspecial;
+  selectHijo.innerHTML = '<option value="">-- Selecciona --</option>';
+
+  // Agregar opción especial si el hijo la tiene definida
+  if (opcionEspecial) {
+    const opt = document.createElement('option');
+    opt.value       = opcionEspecial;
+    opt.textContent = '+ Nuevo Servicio';
+    selectHijo.appendChild(opt);
+  }
+
+  if (!valorPadre) return;
+
+  fetch(`${url}?cliente_id=${valorPadre}`)
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(function(op) {
+        const opt = document.createElement('option');
+        opt.value       = op.valor;
+        opt.textContent = op.label;
+        selectHijo.appendChild(opt);
+      });
+    });
+}
+
+// Inicializar cascadas cuando HTMX carga contenido nuevo
+document.body.addEventListener('htmx:afterSwap', function() {
+  document.querySelectorAll('[data-cascada-hijo]').forEach(function(select) {
+    if (select.value) {
+      selectCascada(select);
+    }
+  });
+});

@@ -218,6 +218,13 @@ class Productos(models.Model):
 
 class Cotizaciones(models.Model):
     cotizacion_id = models.BigAutoField(primary_key=True)
+
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.PROTECT,
+        db_column='cliente_id'
+    )
+
     proyecto = models.ForeignKey(
         Proyectos,
         on_delete=models.CASCADE,

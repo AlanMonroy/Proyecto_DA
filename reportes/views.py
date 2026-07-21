@@ -12,9 +12,20 @@ from decimal import Decimal, ROUND_HALF_UP
 from supabase import create_client
 from django.conf import settings
 import os
+from django.http import JsonResponse
 
-# ── Ejemplo: reporte de usuarios ─────────────────────────────────
-# Adapta este patrón para cualquier modelo/tabla que necesites.
+def proyectos_por_cliente(request):
+    cliente_id = request.GET.get('cliente_id')
+    proyectos  = Proyectos.objects.filter(
+        cliente_id=cliente_id,
+        activo=True
+    ).order_by('nombre')
+
+    data = [
+        {'valor': str(p.pk), 'label': p.nombre}
+        for p in proyectos
+    ]
+    return JsonResponse(data, safe=False)
 
 @login_requerido
 def reporte_usuarios(request):
@@ -1044,15 +1055,34 @@ def reporte_cotizaciones(request):
 def get_campos_cotizaciones():
     return [
         {
+            'nombre': 'cliente',
+            'label': 'Cliente',
+            'tipo': 'select_cascada',
+            'campo_hijo': 'proyecto',
+            'url_cascada': '/reportes/proyectos-por-cliente/',
+            'requerido': True,
+            'ancho': 'completo',
+            'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
+        },
+        {
             'nombre': 'proyecto',
             'label': 'Proyecto',
             'tipo': 'select_con_nuevo',
-            'campo_oculto': 'nombre_servicio',
+            'campo_oculto': 'servicio',
             'valor_trigger': 'nuevo_servicio',
             'campo_fk': 'proyecto',
             'requerido': False,
             'ancho': 'completo',
             'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
+        },
+        {
+            'nombre': 'servicio',
+            'label': 'Servicio',
+            'tipo': 'text',
+            'requerido': False,
+            'oculto': True,
+            'ancho': 'completo',
+            'placeholder': 'Servicio de la cotizacion',
         },
         {
             'nombre': 'nombre',
@@ -1061,14 +1091,6 @@ def get_campos_cotizaciones():
             'requerido': True,
             'ancho': 'completo',
             'placeholder': 'Nombre de la cotizacion',
-        },
-        {
-            'nombre': 'servicio',
-            'label': 'Servicio',
-            'tipo': 'text',
-            'requerido': False,
-            'ancho': 'completo',
-            'placeholder': 'Servicio de la cotizacion',
         },
         {
             'nombre': 'equipo',
@@ -1510,16 +1532,19 @@ def pdf_cotizacion(request, pk):
     story.append(Paragraph(f'{formato_pdf.contacto_ubicacion}', estilo_label))
 
     story.append(Paragraph('Cliente', estilo_subtitulo))
-    story.append(Paragraph(f'{cotizacion.proyecto.cliente.nombre_cliente}', estilo_label))
-    story.append(Paragraph(f'{cotizacion.proyecto.cliente.telefono_contacto}', estilo_label))
-    story.append(Paragraph(f'{cotizacion.proyecto.cliente.direccion}', estilo_label))
+    story.append(Paragraph(f'{cotizacion.cliente.nombre_cliente}', estilo_label))
+    story.append(Paragraph(f'{cotizacion.cliente.telefono_contacto}', estilo_label))
+    story.append(Paragraph(f'{cotizacion.cliente.direccion}', estilo_label))
 
     story.append(Paragraph(f'Cotizacion #: {cotizacion.nombre}', estilo_label))
-    story.append(Paragraph(f'Fecha: {cotizacion.fecha_creacion}', estilo_label))
+    story.append(Paragraph(f'Fecha: {cotizacion.fecha_creacion.strftime("%d/%m/%Y")}', estilo_label))
     story.append(Paragraph(f'Valido por: {formato_pdf.valido}', estilo_label))
 
-    story.append(Paragraph(f'Servicio: {cotizacion.proyecto.nombre}', estilo_label))
-    story.append(Paragraph(f'Servicio: {cotizacion.servicio}', estilo_label))
+    if cotizacion.proyecto_id:
+        story.append(Paragraph(f'Servicio: {cotizacion.proyecto.nombre}', estilo_label))
+    else:
+        story.append(Paragraph(f'Servicio: {cotizacion.servicio}', estilo_label))
+
     story.append(Paragraph(f'Equipo: {cotizacion.equipo}', estilo_label))
     story.append(texto_a_parrafo(cotizacion.descripcion, estilo_textarea))
 

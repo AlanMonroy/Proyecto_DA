@@ -17,7 +17,7 @@ def get_form_campos(campos, objeto=None):
     """
     for campo in campos:
         # Cargar opciones de select desde queryset
-        if campo.get('tipo') in ('select', 'select_con_nuevo') and 'queryset' in campo:
+        if campo.get('tipo') in ('select', 'select_con_nuevo', 'select_cascada') and 'queryset' in campo:
             qs = campo['queryset']
             campo['opciones'] = [
                 {'valor': str(obj.pk), 'label': str(obj)}
@@ -108,7 +108,7 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                     datos[nombre] = float(valor) if tipo == 'decimal' else int(valor)
                 except ValueError:
                     errores[nombre] = 'Valor numérico inválido.'
-            elif tipo in ('select', 'select_con_nuevo') and valor:
+            elif tipo in ('select', 'select_con_nuevo', 'select_cascada') and valor:
                 valor_trigger = campo.get('valor_trigger')
                 if valor_trigger and valor == valor_trigger:
                     pass
@@ -274,7 +274,7 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                     setattr(objeto, nombre, float(valor) if tipo == 'decimal' else int(valor))
                 except ValueError:
                     errores[nombre] = 'Valor numérico inválido.'
-            elif tipo in ('select', 'select_con_nuevo') and valor:
+            elif tipo in ('select', 'select_con_nuevo', 'select_cascada') and valor:
                 valor_trigger = campo.get('valor_trigger')
                 campo_fk = campo.get('campo_fk', nombre)
                 if valor_trigger and valor == valor_trigger:

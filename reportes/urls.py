@@ -4,6 +4,8 @@ from . import views
 app_name = 'reportes'
 
 urlpatterns = [
+    path('proyectos-por-cliente/', views.proyectos_por_cliente, name='proyectos_por_cliente'), #SELECT CASCADE
+
     path('usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
     path('usuarios/crear/', views.create_user,   name='create_user'),
     path('usuarios/<int:pk>/editar/', views.edit_user, name='edit_user'),

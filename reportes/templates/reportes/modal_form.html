@@ -43,7 +43,11 @@
         {% for campo in form_campos %}
         <div class="form-field {% if campo.ancho == 'medio' %}form-field-half{% endif %} {% if campo.ancho == 'completo' %}form-field-full{% endif %}"
           id="campo-{{ campo.nombre }}"
-          {% if campo.oculto %}style="display:none;"{% endif %}
+          {% if campo.oculto %}
+            {% with val=objeto|get_attr:campo.nombre %}
+              {% if not val %}style="display:none;"{% endif %}
+            {% endwith %}
+          {% endif %}
         >
 
           <label for="field-{{ campo.nombre }}">
@@ -58,6 +62,7 @@
               id="field-{{ campo.nombre }}"
               name="{{ campo.nombre }}"
               value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
+              data-valor-original="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
               placeholder="{{ campo.placeholder|default:'' }}"
               {% if campo.requerido %}required{% endif %}
               {% if campo.max_length %}maxlength="{{ campo.max_length }}"{% endif %}
@@ -152,16 +157,22 @@
                 {% endif %}
             </select>
 
+          <!--SELECT SHOW/HIDDEN-->
           {% elif campo.tipo == 'select_con_nuevo' %}
-           <select id="field-{{ campo.nombre }}"
-              name="{{ campo.nombre }}"
-              data-campo-oculto="{{ campo.campo_oculto }}"
-              data-valor-trigger="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
-              onchange="toggleCampoOculto(this)"
-              {% if campo.requerido %}required{% endif %}>
+            {% with val_oculto=objeto|get_attr:campo.campo_oculto %}
+            <select id="field-{{ campo.nombre }}"
+                    name="{{ campo.nombre }}"
+                    data-campo-oculto="{{ campo.campo_oculto }}"
+                    data-valor-trigger="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+                    data-opcion-especial="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+                    onchange="toggleCampoOculto(this)"
+                    {% if campo.requerido %}required{% endif %}>
               <option value="">-- Selecciona --</option>
-              <option value="nuevo_servicio">+ Nuevo Servicio</option>
-              {% if objeto %}
+              <option value="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+                {% if val_oculto %}selected{% endif %}>  {# ← seleccionado si servicio tiene valor #}
+                + Nuevo Servicio
+              </option>
+              {% if objeto and not val_oculto %}
                 {% with val=objeto|get_attr:campo.nombre %}
                   {% with val_pk=val|get_pk %}
                     {% for opcion in campo.opciones %}
@@ -177,6 +188,30 @@
                   <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
                 {% endfor %}
               {% endif %}
+            </select>
+            {% endwith %}
+
+          <!--SELECT CASCADE-->
+          {% elif campo.tipo == 'select_cascada' %}
+            <select id="field-{{ campo.nombre }}"
+                    name="{{ campo.nombre }}"
+                    data-cascada-hijo="{{ campo.campo_hijo }}"
+                    data-url-cascada="{{ campo.url_cascada }}"
+                    onchange="selectCascada(this)"
+                    {% if campo.requerido %}required{% endif %}>
+              <option value="">-- Selecciona --</option>
+              {% for opcion in campo.opciones %}
+                <option value="{{ opcion.valor }}"
+                  {% if objeto %}
+                    {% with val=objeto|get_attr:campo.nombre %}
+                      {% with val_pk=val|get_pk %}
+                        {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}
+                      {% endwith %}
+                    {% endwith %}
+                  {% endif %}>
+                  {{ opcion.label }}
+                </option>
+              {% endfor %}
             </select>
 
         <!-- BOOLEAN / CHECKBOX -->
