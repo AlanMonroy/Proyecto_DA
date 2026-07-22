@@ -231,16 +231,22 @@ class Cotizaciones(models.Model):
         db_column='proyecto_id'
     )
     nombre = models.TextField(null=True, blank=True)
-    margen = models.DecimalField(
-        max_digits=10,
-        decimal_places=0,
-    )
+    margen = models.DecimalField(max_digits=10,decimal_places=0)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     servicio = models.TextField(null=True, blank=True)
     equipo = models.TextField(null=True, blank=True)
     descripcion = models.TextField(null=True, blank=True)
     pie_cotizacion = models.TextField(null=True, blank=True)
+
+    unidad_cantidad = models.DecimalField(max_digits=10,decimal_places=0)
+    unidad_descripcion = models.TextField(null=True, blank=True)
+    unidad_costo = models.DecimalField(max_digits=10,decimal_places=2)
+    unidad_exportacion = models.DecimalField(max_digits=10,decimal_places=2)
+    unidad_margen = models.DecimalField(max_digits=10,decimal_places=0)
+    unidad_costo_unitario = models.DecimalField(max_digits=10,decimal_places=2)
+    unidad_total = models.DecimalField(max_digits=10,decimal_places=2)
+
 
     class Meta:
         db_table = 'cotizaciones'

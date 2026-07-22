@@ -1050,7 +1050,7 @@ def reporte_cotizaciones(request):
         'url_formato_pdf':      '/reportes/cotizaciones/formato_pdf/',
         'btn_crear_texto':      'Nueva Cotizacion',
     }
-    print(time.perf_counter() - inicio)
+    #print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
 
 def get_campos_cotizaciones():
@@ -1064,6 +1064,14 @@ def get_campos_cotizaciones():
             'requerido': True,
             'ancho': 'completo',
             'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
+        },
+        {
+            'nombre': 'nombre',
+            'label': 'Nombre de la cotizacion',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre de la cotizacion',
         },
         {
             'nombre': 'proyecto',
@@ -1084,14 +1092,6 @@ def get_campos_cotizaciones():
             'oculto': True,
             'ancho': 'completo',
             'placeholder': 'Servicio de la cotizacion',
-        },
-        {
-            'nombre': 'nombre',
-            'label': 'Nombre',
-            'tipo': 'text',
-            'requerido': True,
-            'ancho': 'completo',
-            'placeholder': 'Nombre de la cotizacion',
         },
         {
             'nombre': 'equipo',
@@ -1122,6 +1122,62 @@ def get_campos_cotizaciones():
             'queryset': Productos.objects.all().order_by('nombre'),
             'nombre_campo_total': 'Costo de partida total',
             'valor_campo_total': 'total',
+        },
+        {
+            'nombre': 'unidad_descripcion',
+            'label': 'Unidad - Descripcion',
+            'tipo': 'textarea',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Descripcion de la unidad',
+        },
+        {
+            'nombre': 'unidad_cantidad',
+            'label': 'Unidad - Cantidad',
+            'tipo': 'number',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Cantidad de la unidad',
+        },
+        {
+            'nombre': 'unidad_costo',
+            'label': 'Unidad - Costo',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Costo de la unidad',
+        },
+        {
+            'nombre': 'unidad_exportacion',
+            'label': 'Unidad - Exportacion',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Exportacion de la unidad',
+        },
+        {
+            'nombre': 'unidad_margen',
+            'label': 'Unidad - Margen',
+            'tipo': 'number',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Margen de la unidad',
+        },
+        {
+            'nombre': 'unidad_costo_unitario',
+            'label': 'Unidad - Costo Unitario',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Costo unitario de la unidad',
+        },
+        {
+            'nombre': 'unidad_total',
+            'label': 'Unidad - Total',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Total de la unidad',
         },
         {
             'nombre': 'pie_cotizacion',
