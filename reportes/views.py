@@ -1020,6 +1020,7 @@ def reporte_cotizaciones(request):
 
     columnas = [
         {'campo': 'cotizacion_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'cliente', 'label': 'Cliente', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'nombre', 'label': 'Nombre', 'tipo': 'texto', 'ordenable': True},
         {'campo': 'total', 'label': 'Total', 'tipo': 'moneda', 'ordenable': True},
@@ -1725,6 +1726,8 @@ def pdf_cotizacion(request, pk):
                                fontName='Helvetica-Bold', alignment=1, leading=10)
     e_td      = ParagraphStyle('td', fontSize=8, textColor=colors.HexColor('#1c1c1c'),
                                fontName='Helvetica', leading=10)
+    e_td_c = ParagraphStyle('td_c', fontSize=8, textColor=colors.HexColor('#1c1c1c'),
+                            fontName='Helvetica', leading=10, alignment=1)
     e_td_r    = ParagraphStyle('td_r', fontSize=8, textColor=colors.HexColor('#1c1c1c'),
                                fontName='Helvetica', leading=10, alignment=2)
 
@@ -1815,7 +1818,7 @@ def pdf_cotizacion(request, pk):
         story.append(Spacer(1, 0.1*inch))
 
     # ── Tabla productos ───────────────────────────────────────
-    encabezados = [
+    """encabezados = [
         Paragraph('Cantidad',        e_th),
         Paragraph('Producto',        e_th),
         Paragraph('Costo',           e_th),
@@ -1823,7 +1826,13 @@ def pdf_cotizacion(request, pk):
         Paragraph('Margen',          e_th),
         Paragraph('C.Unitario',      e_th),
         Paragraph('Total (USD)',     e_th),
+    ]"""
+
+    encabezados = [
+        Paragraph('Costo Unitario', e_th),
+        Paragraph('Total (USD)', e_th),
     ]
+
     filas         = [encabezados]
     total_partida = Decimal('0')
 
@@ -1841,7 +1850,7 @@ def pdf_cotizacion(request, pk):
         total = (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
         total_partida += total
 
-        filas.append([
+        """filas.append([
             Paragraph(str(int(cantidad)),           e_td_r),
             Paragraph(p.producto.nombre or '',      e_td),
             Paragraph(f'$ {costo:,.2f}',            e_td_r),
@@ -1849,9 +1858,13 @@ def pdf_cotizacion(request, pk):
             Paragraph(f'{margen}%',                 e_td_r),
             Paragraph(f'$ {costo_unitario:,.2f}',   e_td_r),
             Paragraph(f'$ {total:,.2f}',            e_td_r),
+        ])"""
+        filas.append([
+            Paragraph(f'$ {costo_unitario:,.2f}', e_td_c),
+            Paragraph(f'$ {total:,.2f}', e_td_c),
         ])
 
-    tabla = Table(filas, colWidths=[
+    """tabla = Table(filas, colWidths=[
         0.7*inch,   # Cantidad
         2.2*inch,   # Producto
         0.8*inch,   # Costo
@@ -1859,8 +1872,12 @@ def pdf_cotizacion(request, pk):
         0.65*inch,  # Margen
         0.85*inch,  # C.Unitario
         0.9*inch,   # Total
+    ])"""
+    tabla = Table(filas, colWidths=[
+        3.5 * inch,  # C.Unitario
+        3.5 * inch,  # Total
     ])
-    tabla.setStyle(TableStyle([
+    """tabla.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
         ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
         ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
@@ -1878,6 +1895,24 @@ def pdf_cotizacion(request, pk):
         ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
         ('LINEBELOW',     (0, 0), (-1, -1), 0.5, colors.HexColor('#e0dbd2')),
         ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+    ]))"""
+
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a2e')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),  # encabezado centrado
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ALIGN', (0, 1), (-1, -1), 'CENTER'),  # ← todas las filas centradas
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f7f4ef')]),
+        ('TOPPADDING', (0, 1), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0dbd2')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     story.append(tabla)
     story.append(Spacer(1, 0.2*inch))
