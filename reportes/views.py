@@ -1885,6 +1885,8 @@ def pdf_cotizacion(request, pk):
     ]"""
 
     encabezados = [
+        Paragraph('Cantidad', e_th),
+        Paragraph('Producto', e_th),
         Paragraph('Costo Unitario', e_th),
         Paragraph('Total (USD)', e_th),
     ]
@@ -1916,6 +1918,8 @@ def pdf_cotizacion(request, pk):
             Paragraph(f'$ {total:,.2f}',            e_td_r),
         ])"""
         filas.append([
+            Paragraph(str(int(cantidad)), e_td_c),
+            Paragraph(p.producto.nombre or '', e_td_c),
             Paragraph(f'$ {costo_unitario:,.2f}', e_td_c),
             Paragraph(f'$ {total:,.2f}', e_td_c),
         ])
@@ -1930,8 +1934,10 @@ def pdf_cotizacion(request, pk):
         0.9*inch,   # Total
     ])"""
     tabla = Table(filas, colWidths=[
-        3.5 * inch,  # C.Unitario
-        3.5 * inch,  # Total
+        1.75 * inch,  # Cantidad
+        1.75 * inch,  # Producto
+        1.75 * inch,  # C.Unitario
+        1.75 * inch,  # Total
     ])
     """tabla.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
