@@ -1138,6 +1138,7 @@ def get_campos_cotizaciones():
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Cantidad de la unidad',
+            'onchange': 'recalcularUnidad()'
         },
         {
             'nombre': 'unidad_costo',
@@ -1146,6 +1147,7 @@ def get_campos_cotizaciones():
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Costo de la unidad',
+            'onchange': 'recalcularUnidad()'
         },
         {
             'nombre': 'unidad_exportacion',
@@ -1154,6 +1156,7 @@ def get_campos_cotizaciones():
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Exportacion de la unidad',
+            'onchange': 'recalcularUnidad()'
         },
         {
             'nombre': 'unidad_margen',
@@ -1162,11 +1165,12 @@ def get_campos_cotizaciones():
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Margen de la unidad',
+            'onchange': 'recalcularUnidad()'
         },
         {
             'nombre': 'unidad_costo_unitario',
             'label': 'Unidad - Costo Unitario',
-            'tipo': 'decimal',
+            'tipo': 'readonly',
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Costo unitario de la unidad',
@@ -1174,7 +1178,7 @@ def get_campos_cotizaciones():
         {
             'nombre': 'unidad_total',
             'label': 'Unidad - Total',
-            'tipo': 'decimal',
+            'tipo': 'readonly',
             'requerido': False,
             'ancho': 'medio',
             'placeholder': 'Total de la unidad',
@@ -1218,6 +1222,9 @@ def edit_cotizacion(request, pk):
 
     # Calcular total solo para esta cotizacion
     cotizacion = qs.get(pk=pk)
+    print(f"unidad_costo_unitario: {cotizacion.unidad_costo_unitario}")
+    print(f"unidad_total: {cotizacion.unidad_total}")
+    #print(f"dict completo: {cotizacion.__dict__}")
     productos  = CotizacionProductos.objects.filter(
         cotizacion_id=pk
     ).select_related('producto')

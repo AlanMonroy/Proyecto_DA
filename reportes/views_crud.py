@@ -103,7 +103,7 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
 
             if tipo == 'boolean':
                 datos[nombre] = nombre in request.POST
-            elif tipo in ('number', 'decimal') and valor:
+            elif tipo in ('number', 'decimal', 'number_readonly') and valor:
                 try:
                     datos[nombre] = float(valor) if tipo == 'decimal' else int(valor)
                 except ValueError:
@@ -134,6 +134,24 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                     obj.activo = True
                 if p1:
                     obj.set_password(p1)
+
+                # ── Calcular campos readonly ──────────────────────────
+                if hasattr(obj, 'unidad_costo_unitario'):
+                    unidad_costo = Decimal(str(datos.get('unidad_costo', 0) or 0))
+                    unidad_exp = Decimal(str(datos.get('unidad_exportacion', 0) or 0))
+                    unidad_margen = Decimal(str(datos.get('unidad_margen', 0) or 0))
+                    unidad_cant = Decimal(str(datos.get('unidad_cantidad', 0) or 0))
+
+                    divisor = Decimal('1') - (unidad_margen / Decimal('100'))
+                    costo_unitario = (
+                        (unidad_costo * unidad_exp / divisor).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+                        if divisor and unidad_exp else Decimal('0')
+                    )
+                    obj.unidad_costo_unitario = costo_unitario
+                    obj.unidad_total = (costo_unitario * unidad_cant).quantize(
+                        Decimal('0.00'), rounding=ROUND_HALF_UP
+                    )
+
                 obj.save()  # ← obj.pk ya existe aquí
 
                 # Guardar LOV (relaciones simples)
@@ -150,23 +168,6 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                                     campo_obj + '_id': obj.pk,
                                     campo_rel + '_id': valor,
                                 })
-
-                # Guardar lineas (relaciones con cantidad)
-                """for campo in campos:
-                    if campo.get('tipo') == 'lineas' and campo.get('especial'):
-                        nombre     = campo['nombre']
-                        modelo_lin = campo.get('modelo_lineas')
-                        campo_obj  = campo.get('campo_obj')
-                        campo_prod = campo.get('campo_prod')
-                        if modelo_lin and campo_obj and campo_prod:
-                            productos = request.POST.getlist(nombre + '_producto')
-                            for producto_id in productos:
-                                cantidad = request.POST.get(f'cantidad_{producto_id}', 1)
-                                modelo_lin.objects.create(**{
-                                    campo_obj + '_id': obj.pk,
-                                    campo_prod + '_id': producto_id,
-                                    'cantidad': cantidad,
-                                })"""
 
                 # Guardar lineas (relaciones con cantidad)
                 for campo in campos:
@@ -247,7 +248,7 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
     campos = get_form_campos(campos_def, objeto)
 
     if request.method == 'POST':
-        print(f"POST completo: {dict(request.POST)}")
+        #print(f"POST completo: {dict(request.POST)}")
         errores = {}
 
         for campo in campos:
@@ -269,7 +270,7 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
 
             if tipo == 'boolean':
                 setattr(objeto, nombre, valor == 'true')
-            elif tipo in ('number', 'decimal') and valor:
+            elif tipo in ('number', 'decimal', 'number_readonly') and valor:
                 try:
                     setattr(objeto, nombre, float(valor) if tipo == 'decimal' else int(valor))
                 except ValueError:
@@ -288,6 +289,23 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
 
         if not errores:
             try:
+                # ── Calcular campos readonly ──────────────────────────
+                if hasattr(objeto, 'unidad_costo_unitario'):
+                    unidad_costo = Decimal(str(request.POST.get('unidad_costo', 0) or 0))  # ← request.POST
+                    unidad_exp = Decimal(str(request.POST.get('unidad_exportacion', 0) or 0))  # ← request.POST
+                    unidad_margen = Decimal(str(request.POST.get('unidad_margen', 0) or 0))  # ← request.POST
+                    unidad_cant = Decimal(str(request.POST.get('unidad_cantidad', 0) or 0))  # ← request.POST
+
+                    divisor = Decimal('1') - (unidad_margen / Decimal('100'))
+                    costo_unitario = (
+                        (unidad_costo * unidad_exp / divisor).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+                        if divisor and unidad_exp else Decimal('0')
+                    )
+                    objeto.unidad_costo_unitario = costo_unitario
+                    objeto.unidad_total = (costo_unitario * unidad_cant).quantize(
+                        Decimal('0.00'), rounding=ROUND_HALF_UP
+                    )
+
                 objeto.save()
 
                 # Guardar lov

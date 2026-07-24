@@ -10,8 +10,9 @@ register = template.Library()
 def get_attr(obj, attr):
     try:
         valor = getattr(obj, attr, None)
-        if attr == 'total':
-            print(f"get_attr total: obj={obj}, valor={valor}, dict={obj.__dict__.get('total')}")
+        #print(f"get_attr: obj={obj}, attr={attr}, valor={valor}, dict={obj.__dict__.get(attr)}")
+        if attr in ('unidad_costo_unitario', 'unidad_total'):
+            print(f"get_attr {attr}: valor={valor}, type={type(valor)}")
         if valor is not None:
             return valor
         return obj.__dict__.get(attr, '—')

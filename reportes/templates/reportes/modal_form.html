@@ -65,18 +65,33 @@
               data-valor-original="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
               placeholder="{{ campo.placeholder|default:'' }}"
               {% if campo.requerido %}required{% endif %}
+              {% if campo.onchange %}onchange="{{ campo.onchange }}"{% endif %}
               {% if campo.max_length %}maxlength="{{ campo.max_length }}"{% endif %}
             />
 
           <!-- READONLY - solo mostrar valor -->
           {% elif campo.tipo == 'readonly' %}
-            <div class="field-readonly">
-              {% if objeto and campo.campo_valor %}
-                {{ objeto|get_attr:campo.campo_valor|default:'—'|floatformat:2 }}
+            <div class="field-readonly" id="field-{{ campo.nombre }}">
+              {% if objeto %}
+                {% with campo_val=campo.campo_valor|default:campo.nombre %}
+                  {{ objeto|get_attr:campo_val|default:'—'|floatformat:2 }}
+                {% endwith %}
               {% else %}
                 {{ campo.valor_default|default:'—' }}
               {% endif %}
             </div>
+
+          <!--NUMBER NO MODIFICABLE-->
+          {% elif campo.tipo == 'number_readonly' %}
+            <input
+              type="number"
+              id="field-{{ campo.nombre }}"
+              name="{{ campo.nombre }}"
+              value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'0' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'0' }}{% endif %}"
+              step="0.01"
+              readonly
+              style="background: #f7f4ef; color: var(--ink-muted); cursor: not-allowed;"
+            />
 
           <!-- NUMBER / DECIMAL -->
           {% elif campo.tipo == 'number' or campo.tipo == 'decimal' %}
@@ -89,6 +104,7 @@
               placeholder="{{ campo.placeholder|default:'0' }}"
               {% if campo.min is not None %}min="{{ campo.min }}"{% endif %}
               {% if campo.max is not None %}max="{{ campo.max }}"{% endif %}
+              {% if campo.onchange %}onchange="{{ campo.onchange }}"{% endif %}
               {% if campo.tipo == 'decimal' %}step="0.01"{% else %}step="1"{% endif %}
               {% if campo.requerido %}required{% endif %}
             />

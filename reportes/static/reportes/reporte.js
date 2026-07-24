@@ -238,20 +238,6 @@ function lineasActualizar(nombre) {
   if (total) total.textContent = formatoMoneda(suma);
 }
 
-/*function previewImagen(input, previewId) {
-    const preview = document.getElementById(previewId);
-
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-        };
-
-        reader.readAsDataURL(input.files[0]);
-    }
-}*/
-
 function previewImagen(input) {
 
     const uploader = input.closest(".image-uploader");
@@ -368,3 +354,22 @@ document.body.addEventListener('htmx:afterSwap', function() {
     }
   });
 });
+
+function recalcularUnidad(nombre) {
+  const unidad_cantidad = parseInt(document.getElementById('field-unidad_cantidad').value);
+  const unidad_costo = parseFloat(document.getElementById('field-unidad_costo').value);
+  const unidad_exportacion = parseFloat(document.getElementById('field-unidad_exportacion'). value);
+  const unidad_margen = parseFloat(document.getElementById('field-unidad_margen').value);
+
+  const divisor= 1 - (unidad_margen / 100);
+  const costo_unitario = (divisor !== 0 && unidad_exportacion !== 0)
+    ? redondear((unidad_costo * unidad_exportacion) / divisor, 2)
+    : 0;
+
+  const subtotal = redondear(costo_unitario * unidad_cantidad, 2);
+
+  const item_unidad_costo_unitario = document.getElementById('field-unidad_costo_unitario');
+  const item_unidad_total = document.getElementById('field-unidad_total');
+  item_unidad_costo_unitario.textContent = formatoMoneda(costo_unitario);
+  item_unidad_total.textContent = formatoMoneda(subtotal);
+}
