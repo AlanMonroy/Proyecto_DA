@@ -13,6 +13,7 @@ from supabase import create_client
 from django.conf import settings
 import os
 from django.http import JsonResponse
+from itertools import chain
 
 def proyectos_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
@@ -1433,291 +1434,6 @@ def texto_a_parrafo(texto, estilo):
     texto_html = texto.replace('\n', '<br/>')
     return Paragraph(texto_html, estilo)
 
-@login_requerido
-def pdf_cotizacion_v1(request, pk):
-    # Obtener cotizacion con productos
-    dec  = DecimalField(max_digits=20, decimal_places=2)
-    cien = Cast(Value(100), output_field=dec)
-
-    cotizacion = Cotizaciones.objects.annotate(
-        costo_unitario=Sum(
-            ExpressionWrapper(
-                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
-                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
-                       Cast(Value(0), output_field=dec)),
-                output_field=dec
-            ),
-            distinct=True
-        )
-    ).annotate(
-        total=Sum(
-            ExpressionWrapper(
-                (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
-                NullIf(1 - (F('cotizacionproductos__margen') / Cast(Value(100), output_field=dec)),
-                       Cast(Value(0), output_field=dec)) *
-                F('cotizacionproductos__cantidad'),
-                output_field=dec
-            ),
-            distinct=True
-        )
-    ).get(pk=pk)
-
-    productos = CotizacionProductos.objects.filter(
-        cotizacion_id=pk
-    ).select_related('producto')
-
-    #OBTENER IMAGEN
-    formato_pdf = FormatoPdf.objects.get(pk=1)
-    logo = None
-    if formato_pdf.empresa_imagen:
-        try:
-            response = requests.get(formato_pdf.empresa_imagen, timeout=10)
-            response.raise_for_status()
-
-            imagen_bytes = BytesIO(response.content)
-
-            reader = ImageReader(imagen_bytes)
-            ancho, alto = reader.getSize()
-
-            logo = Image(imagen_bytes)
-
-            # Tamaño máximo permitido
-            max_ancho = 2 * inch
-            max_alto = 1 * inch
-
-            escala = min(max_ancho / ancho, max_alto / alto)
-
-            logo.drawWidth = ancho * escala
-            logo.drawHeight = alto * escala
-
-        except requests.RequestException:
-            logo = None
-
-    # Crear PDF en memoria
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=0.75*inch,
-        bottomMargin=0.75*inch
-    )
-
-    styles = getSampleStyleSheet()
-    story  = []
-
-    # ── Estilos personalizados ────────────────────────────────
-    estilo_titulo = ParagraphStyle(
-        'titulo',
-        parent=styles['Title'],
-        fontSize=20,
-        textColor=colors.HexColor('#1a1a2e'),
-        spaceAfter=4,
-    )
-    estilo_subtitulo = ParagraphStyle(
-        'subtitulo',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.HexColor('#6b6b6b'),
-        spaceAfter=10,
-    )
-    estilo_label = ParagraphStyle(
-        'label',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.HexColor('#6b6b6b'),
-        spaceAfter=2,
-    )
-    estilo_valor = ParagraphStyle(
-        'valor',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#1c1c1c'),
-        spaceAfter=12,
-    )
-
-    estilo_textarea = ParagraphStyle(
-        'notas',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.HexColor('#1c1c1c'),
-        leading=12,
-        spaceAfter=6,
-    )
-
-    estilo_derecha = ParagraphStyle(
-        'derecha',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#1c1c1c'),
-        alignment=TA_RIGHT,
-    )
-
-    estilo_th = ParagraphStyle(
-        'th',
-        fontSize=8,
-        textColor=colors.white,
-        fontName='Helvetica-Bold',
-        alignment=1,  # CENTER
-        leading=10,  # espaciado entre líneas
-    )
-
-    estilo_td = ParagraphStyle(
-        'td',
-        fontSize=9,
-        textColor=colors.HexColor('#1c1c1c'),
-        fontName='Helvetica',
-        leading=11,
-    )
-
-    estilo_td_derecha = ParagraphStyle(
-        'td_derecha',
-        fontSize=9,
-        textColor=colors.HexColor('#1c1c1c'),
-        fontName='Helvetica',
-        leading=11,
-        alignment=2,  # RIGHT
-    )
-
-    # ── Encabezado ────────────────────────────────────────────
-    #story.append(Paragraph('Cotización', estilo_titulo))
-    story.append(Paragraph(f'{formato_pdf.empresa_ubicacion}', estilo_label))
-    story.append(Paragraph(f'{formato_pdf.empresa_email}', estilo_label))
-    story.append(Paragraph(f'{formato_pdf.empresa_web}', estilo_label))
-    story.append(Paragraph(f'{formato_pdf.empresa_telefono}', estilo_label))
-
-    if logo:
-        story.append(logo)
-
-    story.append(Paragraph('Contacto', estilo_subtitulo))
-    story.append(Paragraph(f'{formato_pdf.contacto_nombre}', estilo_label))
-    story.append(Paragraph(f'{formato_pdf.contacto_telefono}', estilo_label))
-    story.append(Paragraph(f'{formato_pdf.contacto_ubicacion}', estilo_label))
-
-    story.append(Paragraph('Cliente', estilo_subtitulo))
-    story.append(Paragraph(f'{cotizacion.cliente.nombre_cliente}', estilo_label))
-    story.append(Paragraph(f'{cotizacion.cliente.telefono_contacto}', estilo_label))
-    story.append(Paragraph(f'{cotizacion.cliente.direccion}', estilo_label))
-
-    story.append(Paragraph(f'Cotizacion #: {cotizacion.nombre}', estilo_label))
-    story.append(Paragraph(f'Fecha: {cotizacion.fecha_creacion.strftime("%d/%m/%Y")}', estilo_label))
-    story.append(Paragraph(f'Valido por: {formato_pdf.valido}', estilo_label))
-
-    if cotizacion.proyecto_id:
-        story.append(Paragraph(f'Servicio: {cotizacion.proyecto.nombre}', estilo_label))
-    else:
-        story.append(Paragraph(f'Servicio: {cotizacion.servicio}', estilo_label))
-
-    story.append(Paragraph(f'Equipo: {cotizacion.equipo}', estilo_label))
-    story.append(texto_a_parrafo(cotizacion.descripcion, estilo_textarea))
-
-    story.append(Spacer(1, 0.1*inch))
-
-    # ── Tabla de productos ────────────────────────────────────
-    encabezados = [
-        Paragraph('Producto', estilo_th),
-        Paragraph('Costo', estilo_th),
-        Paragraph('Cantidad', estilo_th),
-        Paragraph('Exportacion', estilo_th),
-        Paragraph('Margen', estilo_th),
-        Paragraph('Costo<br/>Unitario', estilo_th),
-        Paragraph('Total(USD)', estilo_th),
-    ]
-
-    filas = [encabezados]
-
-    total_partida = 0
-
-    for p in productos:
-        cantidad = p.cantidad or 0
-        costo = p.producto.costo or 0
-        exportacion = p.exportacion or 0
-        margen = p.margen or 0
-        costo_unitario = (
-            (costo * exportacion) /
-            (Decimal('1') - (margen / Decimal('100')))
-        ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
-
-        total = (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
-        total_partida += total
-
-        filas.append([
-            Paragraph(p.producto.nombre, estilo_td),
-            Paragraph(f'${costo:,.2f}', estilo_td_derecha),
-            Paragraph(str(cantidad), estilo_td_derecha),
-            Paragraph(str(exportacion), estilo_td_derecha),
-            Paragraph(str(margen), estilo_td_derecha),
-            Paragraph(f'${costo_unitario:,.2f}', estilo_td_derecha),
-            Paragraph(f'${total:,.2f}', estilo_td_derecha),
-        ])
-
-    #tabla = Table(filas, colWidths=[2.0*inch, 1.0*inch, 1.0*inch, 1.2*inch, 0.8*inch, 1.0*inch])
-    tabla = Table(filas, colWidths=[
-        1.8 * inch,  # Producto
-        0.9 * inch,  # Costo
-        0.7 * inch,  # Cantidad
-        0.9 * inch,  # Exportación
-        0.7 * inch,  # Margen
-        0.9 * inch,  # Costo unitario
-        1.1 * inch,  # Total
-    ])
-
-    tabla.setStyle(TableStyle([
-        # Encabezado
-        ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
-        ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
-        ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 0), (-1, 0),  9),
-        ('ALIGN',         (0, 0), (-1, 0),  'CENTER'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0),  8),
-        ('TOPPADDING',    (0, 0), (-1, 0),  8),
-        # Filas
-        ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE',      (0, 1), (-1, -1), 9),
-        ('ALIGN',         (1, 1), (-1, -1), 'RIGHT'),
-        ('ALIGN',         (0, 1), (0, -1),  'LEFT'),
-        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, colors.HexColor('#f7f4ef')]),
-        ('TOPPADDING',    (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('LINEBELOW',     (0, 0), (-1, -1), 0.5, colors.HexColor('#e0dbd2')),
-    ]))
-
-    story.append(tabla)
-    story.append(Spacer(1, 0.3*inch))
-
-    # ── Resumen ───────────────────────────────────────────────
-    costo   = total_partida or 0
-
-    resumen = [
-        ['Total(USD):',  f'${costo:,.2f}'],
-    ]
-
-    tabla_resumen = Table(resumen, colWidths=[4.5*inch, 2.5*inch])
-    tabla_resumen.setStyle(TableStyle([
-        ('FONTNAME',      (0, 0), (-1, -2), 'Helvetica'),
-        ('FONTNAME',      (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 0), (-1, -1), 10),
-        ('ALIGN',         (1, 0), (1, -1),  'RIGHT'),
-        ('TEXTCOLOR',     (0, 0), (0, -1),  colors.HexColor('#6b6b6b')),
-        ('TEXTCOLOR',     (1, 0), (1, -1),  colors.HexColor('#1c1c1c')),
-        ('LINEABOVE',     (0, -1), (-1, -1), 1, colors.HexColor('#1a1a2e')),
-        ('TOPPADDING',    (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
-
-    story.append(tabla_resumen)
-    story.append(Spacer(1, 0.1 * inch))
-    story.append(texto_a_parrafo(cotizacion.pie_cotizacion, estilo_textarea))
-
-    # ── Generar PDF ───────────────────────────────────────────
-    doc.build(story)
-    buffer.seek(0)
-
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="cotizacion_{cotizacion.nombre}.pdf"'
-    return response
-
 def pdf_cotizacion(request, pk):
     dec  = DecimalField(max_digits=20, decimal_places=2)
     print(f"PDF solicitado para pk={pk}")
@@ -1901,7 +1617,29 @@ def pdf_cotizacion(request, pk):
     filas         = [encabezados]
     total_partida = Decimal('0')
 
-    for p in productos:
+    #clase para crear nuevo producto
+    class ProductoUnidad:
+        def __init__(self, cotizacion):
+            self.cantidad = cotizacion.unidad_cantidad
+            self.exportacion = cotizacion.unidad_exportacion
+            self.margen = cotizacion.unidad_margen
+            self.producto = type('obj', (object,), {
+                'nombre': cotizacion.unidad_descripcion,
+                'costo': cotizacion.unidad_costo,
+            })()
+
+    if cotizacion.unidad_descripcion and cotizacion.unidad_costo:
+        unidad = ProductoUnidad(cotizacion)
+        productos_completos = list(chain(productos, [unidad]))
+    else:
+        productos_completos = productos
+
+    def texto_pdf(texto):
+        if not texto:
+            return ''
+        return texto.replace('\n', '<br/>')
+
+    for p in productos_completos:
         cantidad    = Decimal(str(p.cantidad    or 0))
         costo       = Decimal(str(p.producto.costo or 0))
         exportacion = Decimal(str(p.exportacion or 0))
@@ -1926,7 +1664,7 @@ def pdf_cotizacion(request, pk):
         ])"""
         filas.append([
             Paragraph(str(int(cantidad)), e_td_c),
-            Paragraph(p.producto.nombre or '', e_td_c),
+            Paragraph(texto_pdf(p.producto.nombre) or '', e_td),
             Paragraph(f'$ {costo_unitario:,.2f}', e_td_c),
             Paragraph(f'$ {total:,.2f}', e_td_c),
         ])
@@ -1941,10 +1679,10 @@ def pdf_cotizacion(request, pk):
         0.9*inch,   # Total
     ])"""
     tabla = Table(filas, colWidths=[
-        1.75 * inch,  # Cantidad
-        1.75 * inch,  # Producto
-        1.75 * inch,  # C.Unitario
-        1.75 * inch,  # Total
+        1 * inch,  # Cantidad
+        4 * inch,  # Producto
+        1 * inch,  # C.Unitario
+        1 * inch,  # Total
     ])
     """tabla.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),

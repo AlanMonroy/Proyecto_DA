@@ -44,9 +44,13 @@
         <div class="form-field {% if campo.ancho == 'medio' %}form-field-half{% endif %} {% if campo.ancho == 'completo' %}form-field-full{% endif %}"
           id="campo-{{ campo.nombre }}"
           {% if campo.oculto %}
-            {% with val=objeto|get_attr:campo.nombre %}
-              {% if not val %}style="display:none;"{% endif %}
-            {% endwith %}
+            {% if objeto %}
+              {% with val=objeto|get_attr:campo.nombre %}
+                {% if not val %}style="display:none;"{% endif %}
+              {% endwith %}
+            {% else %}
+              style="display:none;"
+            {% endif %}
           {% endif %}
         >
 
@@ -183,10 +187,12 @@
                     data-opcion-especial="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
                     onchange="toggleCampoOculto(this)"
                     {% if campo.requerido %}required{% endif %}>
-              <option value="">-- Selecciona --</option>
+              <option value="" {% if not objeto %}selected{% endif %}>
+                  -- Selecciona --
+              </option>
               <option value="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
-                {% if val_oculto %}selected{% endif %}>  {# ← seleccionado si servicio tiene valor #}
-                + Nuevo Servicio
+                  {% if objeto and val_oculto %}selected{% endif %}>
+                  + Nuevo Servicio
               </option>
               {% if objeto and not val_oculto %}
                 {% with val=objeto|get_attr:campo.nombre %}
@@ -317,13 +323,13 @@
                 <td>
                   <input type="number" class="linea-exportacion"
                          name="exportacion_{{ linea.producto_id }}"
-                         value="{{ linea.exportacion|default:0 }}" min="1"
+                         value="{{ linea.exportacion|default:1 }}" min="1"
                          onchange="lineasActualizar('{{ campo.nombre }}')"/>
                 </td>
                 <td>
                   <input type="number" class="linea-margen"
                          name="margen_{{ linea.producto_id }}"
-                         value="{{ linea.margen|default:0 }}" min="1"
+                         value="{{ linea.margen|default:1 }}" min="1"
                          onchange="lineasActualizar('{{ campo.nombre }}')"/>
                 </td>
                 <td class="linea-costo-venta">${{ linea.costo_unitario }}</td>
@@ -478,3 +484,12 @@
     </form>
   </div>
 </div>
+
+<script>
+// Al cargar el modal disparar toggle si hay valor trigger seleccionado
+document.querySelectorAll('[data-valor-trigger]').forEach(function(select) {
+  if (select.value === select.dataset.valorTrigger) {
+    toggleCampoOculto(select);
+  }
+});
+</script>

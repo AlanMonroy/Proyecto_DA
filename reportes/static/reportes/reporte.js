@@ -166,13 +166,13 @@ function lineasAgregar(nombre, productoId, productoNombre, costo, el) {
     <td>
       <input type="number" class="linea-exportacion"
              name="exportacion_${productoId}"
-             value="0" min="0"
+             value="1" min="1"
              onchange="lineasActualizar('${nombre}')" />
     </td>
     <td>
       <input type="number" class="linea-margen"
              name="margen_${productoId}"
-             value="0" min="0"
+             value="1" min="1"
              onchange="lineasActualizar('${nombre}')" />
     </td>
     <td class="linea-costo-venta">$0</td>
@@ -239,49 +239,29 @@ function lineasActualizar(nombre) {
 }
 
 function previewImagen(input) {
-
     const uploader = input.closest(".image-uploader");
-
     const preview = uploader.querySelector("img");
     const message = uploader.querySelector(".upload-message");
     const fileName = uploader.querySelector(".file-name");
 
-
     if (input.files && input.files[0]) {
-
         const file = input.files[0];
 
-
         if (!file.type.startsWith("image/")) {
-
             alert("Seleccione una imagen válida");
-
             input.value = "";
-
             return;
         }
 
-
         const reader = new FileReader();
-
-
         reader.onload = function(e) {
-
             preview.src = e.target.result;
-
             preview.classList.remove("hidden");
-
             message.classList.add("hidden");
-
             fileName.textContent = file.name;
-
         };
-
-
         reader.readAsDataURL(file);
-
     }
-
 }
 
 function toggleCampoOculto(select) {
@@ -354,6 +334,7 @@ document.body.addEventListener('htmx:afterSwap', function() {
     }
   });
 });
+
 
 function recalcularUnidad(nombre) {
   const unidad_cantidad = parseInt(document.getElementById('field-unidad_cantidad').value);
