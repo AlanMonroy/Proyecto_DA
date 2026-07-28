@@ -26,6 +26,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 
+#TIEMPO Y MANEJO DE LA SESSION
+SESSION_COOKIE_AGE = 60 * 60 * 2  # 2 horas de inactividad
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True  # ← reinicia el contador con cada request
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 

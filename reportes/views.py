@@ -1519,7 +1519,7 @@ def pdf_cotizacion(request, pk):
         Paragraph(formato_pdf.empresa_ubicacion or '', e_small),
         Paragraph(formato_pdf.empresa_email     or '', e_small),
         Paragraph(formato_pdf.empresa_web       or '', e_small),
-        Paragraph(formato_pdf.empresa_telefono  or '', e_small),
+        Paragraph(f'Tel. {formato_pdf.empresa_telefono}'  or '', e_small),
     ]
 
     # ── Bloque contacto + cliente (derecha) ───────────────────

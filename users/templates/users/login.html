@@ -206,7 +206,7 @@
               id="log-username"
               name="username"
               placeholder="Nombre usuario"
-              value="{{ login_form.username.value|default:'' }}"
+              value="{{ request.COOKIES.remember_username|default:'' }}"
               autocomplete="username"
               required
             />

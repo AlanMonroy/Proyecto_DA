@@ -45,8 +45,12 @@ def auth_page(request):
                         request.session['usuario_name'] = usuario.username
                         request.session['usuario_rol'] = usuario.rol_id
                         messages.success(request, f'¡Hola de nuevo, {usuario.username}!')
+                        response = redirect(rutas.get(usuario.rol_id, 'home'))
 
-                        return redirect(rutas.get(usuario.rol_id, 'home'))
+                        if request.POST.get('remember_me'):
+                            response.set_cookie('remember_username', usuario.username, max_age=60 * 60 * 24 * 30)  # 30 días
+
+                        return response
                         #return redirect('home')  # cambia a tu URL destino
                     else:
                         messages.error(request, 'Usuario o contraseña incorrectos.')
