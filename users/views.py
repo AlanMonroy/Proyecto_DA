@@ -44,6 +44,7 @@ def auth_page(request):
                         request.session['usuario_id'] = usuario.user_id
                         request.session['usuario_name'] = usuario.username
                         request.session['usuario_rol'] = usuario.rol_id
+                        request.session['usuario_empresa'] = usuario.empresa_id
                         messages.success(request, f'¡Hola de nuevo, {usuario.username}!')
                         response = redirect(rutas.get(usuario.rol_id, 'home'))
 
