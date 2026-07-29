@@ -39,8 +39,8 @@ def reporte_usuarios(request):
     page       = request.GET.get('page', 1)
 
     # ── Queryset base ─────────────────────────────────────────────
-    #qs = Usuario.objects.all()
-    qs = Usuario.objects.select_related('rol').all()
+    empresa_id = request.session.get('usuario_empresa_id')
+    qs = Usuario.objects.select_related('rol').filter(empresa_id=empresa_id).all()
 
     # ── Filtro búsqueda ───────────────────────────────────────────
     if q:
