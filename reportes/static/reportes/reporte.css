@@ -465,3 +465,40 @@
   .td-acciones { justify-content: flex-end; }
   .td-acciones::before { display: none; }
 }
+
+@media (max-width: 768px) {
+  .reporte-wrapper {
+    padding: 0;
+  }
+
+  .page-content {
+    padding: 1rem;
+    overflow-x: hidden;
+  }
+
+  .reporte-filtros {
+    padding: 0.75rem;
+  }
+
+  .reporte-tabla-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reporte-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .reporte-header-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .reporte-header-right .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+  }
+}

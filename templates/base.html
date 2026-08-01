@@ -27,8 +27,15 @@
       <span>Kor Suite</span>
     </a>
 
+    <!-- Botón hamburguesa (solo móvil) -->
+    <button class="navbar-toggle" onclick="toggleMenu()" aria-label="Menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
     <!-- Opciones dinámicas desde BD -->
-    <ul class="navbar-menu">
+    <ul class="navbar-menu"  id="navbar-menu">
       {% for opcion in menu_opciones %}
         <li>
           <a href="{% url opcion.url_name %}"
@@ -67,5 +74,11 @@
   {% block scripts %}{% endblock %}
 
   {% django_browser_reload_script %}
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('navbar-menu').classList.toggle('open');
+    }
+  </script>
 </body>
 </html>
