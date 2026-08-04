@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load reporte_tags %}
+
+{% block title %}{{ form_titulo }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'reportes/css/reporte.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/css/modal_form.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/css/form_page.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="form-page-wrapper">
+
+  <!-- ── Encabezado ──────────────────────────────────── -->
+  <div class="form-page-header">
+    <div class="form-page-header-left">
+      <a href="javascript:history.back()" class="form-page-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Volver
+      </a>
+      <h1 class="form-page-titulo">{{ form_titulo }}</h1>
+    </div>
+    <div class="form-page-header-right">
+      {% if objeto and url_pdf %}
+      <a href="{{ url_pdf }}" class="btn btn-outline" target="_blank">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar PDF
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+
+  <!-- ── Formulario ──────────────────────────────────── -->
+  <form method="POST"
+        action="{{ form_action }}"
+        enctype="multipart/form-data"
+        novalidate
+        id="form-page-form">
+    {% csrf_token %}
+    {% if objeto %}
+      <input type="hidden" name="_method" value="PUT" />
+      <input type="hidden" name="pk" value="{{ objeto.pk }}" />
+    {% endif %}
+
+    <div class="form-page-body">
+      {% for campo in form_campos %}
+      <div class="form-field
+                  {% if campo.ancho == 'medio' %}form-field-half{% endif %}
+                  {% if campo.ancho == 'completo' %}form-field-full{% endif %}"
+           id="campo-{{ campo.nombre }}"
+           {% if campo.oculto %}
+             {% if objeto %}
+               {% with val=objeto|get_attr_safe:campo.nombre %}
+                 {% if not val %}style="display:none;"{% endif %}
+               {% endwith %}
+             {% else %}
+               style="display:none;"
+             {% endif %}
+           {% endif %}>
+
+        <label for="field-{{ campo.nombre }}">
+          {{ campo.label }}
+          {% if campo.requerido %}<span class="field-required">*</span>{% endif %}
+        </label>
+
+        <!-- TEXT / EMAIL / URL / PASSWORD -->
+        {% if campo.tipo == 'text' or campo.tipo == 'email' or campo.tipo == 'url' or campo.tipo == 'password' %}
+          <input
+            type="{{ campo.tipo }}"
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
+            data-valor-original="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
+            placeholder="{{ campo.placeholder|default:'' }}"
+            {% if campo.requerido %}required{% endif %}
+            {% if campo.onchange %}onchange="{{ campo.onchange }}"{% endif %}
+            {% if campo.max_length %}maxlength="{{ campo.max_length }}"{% endif %}
+          />
+
+        <!-- READONLY -->
+        {% elif campo.tipo == 'readonly' %}
+          <div class="field-readonly" id="field-{{ campo.nombre }}">
+            {% if objeto %}
+              {% with campo_val=campo.campo_valor|default:campo.nombre %}
+                {{ objeto|get_attr:campo_val|default:'—'|floatformat:2 }}
+              {% endwith %}
+            {% else %}
+              {{ campo.valor_default|default:'—' }}
+            {% endif %}
+          </div>
+
+        <!-- NUMBER READONLY -->
+        {% elif campo.tipo == 'number_readonly' %}
+          <input
+            type="number"
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'0' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'0' }}{% endif %}"
+            step="0.01"
+            readonly
+            style="background: #f7f4ef; color: var(--ink-muted); cursor: not-allowed;"
+          />
+
+        <!-- NUMBER / DECIMAL -->
+        {% elif campo.tipo == 'number' or campo.tipo == 'decimal' %}
+          <input
+            type="number"
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
+            placeholder="{{ campo.placeholder|default:'0' }}"
+            {% if campo.min is not None %}min="{{ campo.min }}"{% endif %}
+            {% if campo.max is not None %}max="{{ campo.max }}"{% endif %}
+            {% if campo.onchange %}onchange="{{ campo.onchange }}"{% endif %}
+            {% if campo.tipo == 'decimal' %}step="0.01"{% else %}step="1"{% endif %}
+            {% if campo.requerido %}required{% endif %}
+          />
+
+        <!-- DATE -->
+        {% elif campo.tipo == 'date' %}
+          <input
+            type="date"
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d'|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}"
+            {% if campo.requerido %}required{% endif %}
+          />
+
+        <!-- DATETIME -->
+        {% elif campo.tipo == 'datetime' %}
+          <input
+            type="datetime-local"
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            value="{% if objeto %}{{ objeto|get_attr:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|date:'Y-m-d\TH:i'|default:'' }}{% endif %}"
+            {% if campo.requerido %}required{% endif %}
+          />
+
+        <!-- TEXTAREA -->
+        {% elif campo.tipo == 'textarea' %}
+          <textarea
+            id="field-{{ campo.nombre }}"
+            name="{{ campo.nombre }}"
+            placeholder="{{ campo.placeholder|default:'' }}"
+            rows="{{ campo.filas|default:3 }}"
+            {% if campo.requerido %}required{% endif %}
+          >{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% elif valores_post %}{{ valores_post|get_dict:campo.nombre|default:'' }}{% endif %}</textarea>
+
+        <!-- SELECT -->
+        {% elif campo.tipo == 'select' %}
+          <select id="field-{{ campo.nombre }}" name="{{ campo.nombre }}"
+              {% if campo.requerido %}required{% endif %}>
+            <option value="">-- Selecciona --</option>
+            {% if objeto %}
+              {% with val=objeto|get_attr:campo.nombre %}
+                {% with val_pk=val|get_pk %}
+                  {% for opcion in campo.opciones %}
+                    <option value="{{ opcion.valor }}"
+                      {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}>
+                      {{ opcion.label }}
+                    </option>
+                  {% endfor %}
+                {% endwith %}
+              {% endwith %}
+            {% elif valores_post %}
+              {% with val_post=valores_post|get_dict:campo.nombre %}
+                {% for opcion in campo.opciones %}
+                  <option value="{{ opcion.valor }}"
+                    {% if val_post == opcion.valor %}selected{% endif %}>
+                    {{ opcion.label }}
+                  </option>
+                {% endfor %}
+              {% endwith %}
+            {% else %}
+              {% for opcion in campo.opciones %}
+                <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+
+        <!-- SELECT CON NUEVO -->
+        {% elif campo.tipo == 'select_con_nuevo' %}
+          {% with val_oculto=objeto|get_attr_safe:campo.campo_oculto %}
+          <select id="field-{{ campo.nombre }}"
+                  name="{{ campo.nombre }}"
+                  data-campo-oculto="{{ campo.campo_oculto }}"
+                  data-valor-trigger="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+                  data-opcion-especial="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+                  onchange="toggleCampoOculto(this)"
+                  {% if campo.requerido %}required{% endif %}>
+            <option value="">-- Selecciona --</option>
+            <option value="{{ campo.valor_trigger|default:'nuevo_servicio' }}"
+              {% if val_oculto and val_oculto != '' %}selected{% endif %}>
+              + Nuevo Servicio
+            </option>
+            {% if objeto and not val_oculto %}
+              {% with val=objeto|get_attr:campo.nombre %}
+                {% with val_pk=val|get_pk %}
+                  {% for opcion in campo.opciones %}
+                    <option value="{{ opcion.valor }}"
+                      {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}>
+                      {{ opcion.label }}
+                    </option>
+                  {% endfor %}
+                {% endwith %}
+              {% endwith %}
+            {% else %}
+              {% for opcion in campo.opciones %}
+                <option value="{{ opcion.valor }}">{{ opcion.label }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          {% endwith %}
+
+        <!-- SELECT CASCADA -->
+        {% elif campo.tipo == 'select_cascada' %}
+          <select id="field-{{ campo.nombre }}"
+                  name="{{ campo.nombre }}"
+                  data-cascada-hijo="{{ campo.campo_hijo }}"
+                  data-url-cascada="{{ campo.url_cascada }}"
+                  data-valor-actual="{% if objeto %}{{ objeto|get_attr:campo.nombre|get_pk }}{% endif %}"
+                  onchange="selectCascada(this)"
+                  {% if campo.requerido %}required{% endif %}>
+            <option value="">-- Selecciona --</option>
+            {% for opcion in campo.opciones %}
+              <option value="{{ opcion.valor }}"
+                {% if objeto %}
+                  {% with val=objeto|get_attr:campo.nombre %}
+                    {% with val_pk=val|get_pk %}
+                      {% if val_pk == opcion.valor|stringformat:'s' %}selected{% endif %}
+                    {% endwith %}
+                  {% endwith %}
+                {% endif %}>
+                {{ opcion.label }}
+              </option>
+            {% endfor %}
+          </select>
+
+        <!-- BOOLEAN -->
+        {% elif campo.tipo == 'boolean' %}
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              id="field-{{ campo.nombre }}"
+              name="{{ campo.nombre }}"
+              value="true"
+              {% if objeto %}
+                {% with val=objeto|get_attr:campo.nombre %}{% if val %}checked{% endif %}{% endwith %}
+              {% elif valores_post %}
+                {% if valores_post|get_dict:campo.nombre %}checked{% endif %}
+              {% endif %}
+            />
+            <span>{{ campo.label_check|default:campo.label }}</span>
+          </label>
+
+        <!-- LOV -->
+        {% elif campo.tipo == 'lov' %}
+          <div class="lov-wrap" id="lov-{{ campo.nombre }}">
+            <div class="lov-tags" id="lov-tags-{{ campo.nombre }}">
+              {% for val in campo.valores_actuales %}
+                <span class="lov-tag" data-valor="{{ val.valor }}">
+                  {{ val.label }}
+                  <button type="button" onclick="lovRemove('{{ campo.nombre }}', '{{ val.valor }}', this)">×</button>
+                  <input type="hidden" name="{{ campo.nombre }}" value="{{ val.valor }}" />
+                </span>
+              {% endfor %}
+            </div>
+            <div class="lov-input-wrap">
+              <input type="text" class="lov-input"
+                     placeholder="{{ campo.placeholder|default:'Buscar...' }}"
+                     autocomplete="off"
+                     oninput="lovBuscar('{{ campo.nombre }}', this.value, {{ campo.opciones|length }})"
+                     onfocus="lovBuscar('{{ campo.nombre }}', this.value, {{ campo.opciones|length }})" />
+              <div class="lov-dropdown" id="lov-dropdown-{{ campo.nombre }}">
+                {% for opcion in campo.opciones %}
+                  <div class="lov-opcion"
+                       data-valor="{{ opcion.valor }}"
+                       data-label="{{ opcion.label }}"
+                       data-nombre="{{ campo.nombre }}"
+                       onclick="lovSeleccionar('{{ campo.nombre }}', '{{ opcion.valor }}', '{{ opcion.label }}', this)">
+                    {{ opcion.label }}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+        <!-- LINEAS -->
+        {% elif campo.tipo == 'lineas' %}
+        <div class="lineas-wrap" id="lineas-{{ campo.nombre }}">
+          <table class="lineas-tabla" id="lineas-tabla-{{ campo.nombre }}">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Costo</th>
+                <th>Cantidad</th>
+                <th>Exportacion</th>
+                <th>Margen</th>
+                <th>Costo Unitario</th>
+                <th>Total(USD)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lineas-body-{{ campo.nombre }}">
+              {% for linea in campo.lineas_actuales %}
+              <tr class="linea-row" data-producto-id="{{ linea.producto_id }}">
+                <td>{{ linea.nombre }}</td>
+                <td class="linea-costo">${{ linea.costo }}</td>
+                <td>
+                  <input type="number" class="linea-cantidad"
+                         name="cantidad_{{ linea.producto_id }}"
+                         value="{{ linea.cantidad }}" min="1"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-exportacion"
+                         name="exportacion_{{ linea.producto_id }}"
+                         value="{{ linea.exportacion|default:1 }}" min="0" step="0.01"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-margen"
+                         name="margen_{{ linea.producto_id }}"
+                         value="{{ linea.margen|default:0 }}" min="0" max="100"
+                         onchange="lineasActualizar('{{ campo.nombre }}')"/>
+                </td>
+                <td class="linea-costo-venta">${{ linea.costo_unitario }}</td>
+                <td class="linea-subtotal">${{ linea.subtotal }}</td>
+                <td>
+                  <button type="button" class="linea-eliminar"
+                          onclick="lineasEliminar('{{ campo.nombre }}', this)">×</button>
+                </td>
+                <input type="hidden" name="{{ campo.nombre }}_producto" value="{{ linea.producto_id }}" />
+              </tr>
+              {% endfor %}
+
+              {# ── Fila unidad editable ── #}
+              <tr class="linea-row linea-unidad" id="fila-unidad"
+                  {% if not objeto or not objeto.unidad_costo %}style="display:none;"{% endif %}>
+                <td>
+                  <textarea class="linea-desc-unidad"
+                            name="unidad_descripcion"
+                            placeholder="Descripción de la unidad"
+                            rows="1"
+                            onfocus="this.rows=6"
+                            onblur="this.rows=1"
+                            style="resize:none; transition: all 0.2s ease; width:100%;">{% if objeto %}{{ objeto.unidad_descripcion|default:'' }}{% endif %}</textarea>
+                </td>
+                <td>
+                  <input type="number" class="linea-costo"
+                         name="unidad_costo"
+                         value="{% if objeto %}{{ objeto.unidad_costo|default:0 }}{% endif %}"
+                         step="0.01" min="0"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-cantidad"
+                         name="unidad_cantidad"
+                         value="{% if objeto %}{{ objeto.unidad_cantidad|default:1 }}{% endif %}"
+                         min="1"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-exportacion"
+                         name="unidad_exportacion"
+                         value="{% if objeto %}{{ objeto.unidad_exportacion|default:1 }}{% endif %}"
+                         step="0.01" min="0"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-margen"
+                         name="unidad_margen"
+                         value="{% if objeto %}{{ objeto.unidad_margen|default:0 }}{% endif %}"
+                         min="0" max="100"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td class="linea-costo-venta">
+                  $<span id="unidad-costo-unitario">{% if objeto %}{{ objeto.unidad_costo_unitario|default:0 }}{% endif %}</span>
+                </td>
+                <td class="linea-subtotal">
+                  $<span id="unidad-total">{% if objeto %}{{ objeto.unidad_total|default:0 }}{% endif %}</span>
+                </td>
+                <td>
+                  <button type="button" class="linea-eliminar"
+                          onclick="eliminarUnidad()">×</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" style="text-align:right; font-weight:600;">{{ campo.nombre_campo_total }}:</td>
+                <td colspan="4" class="lineas-total" id="lineas-total-{{ campo.nombre }}">
+                  {% if objeto and campo.valor_campo_total %}
+                    ${{ objeto|get_attr:campo.valor_campo_total|default:"0"|floatformat:2 }}
+                  {% else %}
+                    $0.00
+                  {% endif %}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="lineas-agregar">
+            <div class="lov-input-wrap">
+              <input type="text" class="lov-input"
+                     placeholder="Buscar producto para agregar..."
+                     autocomplete="off"
+                     oninput="lineasBuscar('{{ campo.nombre }}', this.value)"
+                     onfocus="lineasBuscar('{{ campo.nombre }}', this.value)" />
+              <div class="lov-dropdown" id="lineas-dropdown-{{ campo.nombre }}">
+                {% for opcion in campo.opciones %}
+                <div class="lov-opcion"
+                     data-id="{{ opcion.producto_id }}"
+                     data-nombre="{{ opcion.nombre }}"
+                     data-costo="{{ opcion.costo }}"
+                     onclick="lineasAgregar('{{ campo.nombre }}', '{{ opcion.producto_id }}', '{{ opcion.nombre }}', {{ opcion.costo }}, this)">
+                  {{ opcion.nombre }} — ${{ opcion.costo }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-outline btn-sm"
+                  onclick="mostrarUnidad()" id="btn-agregar-unidad"
+                  {% if objeto and objeto.unidad_costo %}style="display:none;"{% endif %}>
+            + Agregar unidad de servicio
+          </button>
+
+        </div>
+
+        <!-- FILE -->
+        {% elif campo.tipo == 'file' %}
+          <div class="image-uploader">
+            <input id="field-{{ campo.nombre }}" type="file"
+                   name="{{ campo.nombre }}" accept="image/*"
+                   onchange="previewImagen(this)">
+            <label for="field-{{ campo.nombre }}" id="file-drop">
+              <img id="preview-{{ campo.nombre }}"
+                   src="{{ objeto|get_attr:campo.nombre }}"
+                   class="preview-imagen">
+              <div class="upload-message">
+                <span>Arrastra una imagen aquí</span>
+                <small>o haz click para seleccionar</small>
+              </div>
+            </label>
+          </div>
+
+        <!-- COLOR -->
+        {% elif campo.tipo == 'color' %}
+          <div class="color-field-wrap">
+            <input type="color" id="field-{{ campo.nombre }}" name="{{ campo.nombre }}"
+                   value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'#1a1a2e' }}{% endif %}"
+                   {% if campo.requerido %}required{% endif %}/>
+            <input type="text" class="color-text-input" placeholder="#1a1a2e"
+                   value="{% if objeto %}{{ objeto|get_attr:campo.nombre|default:'' }}{% endif %}"
+                   oninput="syncColor(this, 'field-{{ campo.nombre }}')"
+                   onchange="syncColorFromText(this, 'field-{{ campo.nombre }}')"/>
+          </div>
+
+        {% endif %}
+
+        <!-- Errores -->
+        {% if errores %}
+          {% with err=errores|get_dict:campo.nombre %}
+            {% if err %}<span class="field-error">{{ err }}</span>{% endif %}
+          {% endwith %}
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div><!-- /form-page-body -->
+
+    <!-- ── Footer fijo ──────────────────────────────── -->
+    <div class="form-page-footer">
+      <a href="javascript:history.back()" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        {% if objeto %}Guardar cambios{% else %}Crear registro{% endif %}
+      </button>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'reportes/js/reporte.js' %}"></script>
+{% endblock %}

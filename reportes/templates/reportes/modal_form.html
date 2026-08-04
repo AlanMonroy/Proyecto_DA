@@ -341,6 +341,58 @@
                 <input type="hidden" name="{{ campo.nombre }}_producto" value="{{ linea.producto_id }}" />
               </tr>
               {% endfor %}
+
+              {# ── Fila unidad editable ── #}
+              <tr class="linea-row linea-unidad" id="fila-unidad"
+                  {% if not objeto or not objeto.unidad_costo %}style="display:none;"{% endif %}>
+                <td>
+                  <textarea class="linea-desc-unidad"
+                    name="unidad_descripcion"
+                    placeholder="Descripción de la unidad"
+                    rows="1"
+                    onfocus="this.rows=6"
+                    onblur="this.rows=1"
+                    style="resize:none; transition: all 0.2s ease;">{% if objeto %}{{ objeto.unidad_descripcion|default:'' }}{% endif %}</textarea>
+                </td>
+                <td class="linea-costo-unidad">
+                  <input type="number" class="linea-costo"
+                         name="unidad_costo"
+                         value="{% if objeto %}{{ objeto.unidad_costo|default:0 }}{% endif %}"
+                         step="0.01" min="0"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-cantidad"
+                         name="unidad_cantidad"
+                         value="{% if objeto %}{{ objeto.unidad_cantidad|default:1 }}{% endif %}"
+                         min="1"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-exportacion"
+                         name="unidad_exportacion"
+                         value="{% if objeto %}{{ objeto.unidad_exportacion|default:1 }}{% endif %}"
+                         step="0.01" min="0"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td>
+                  <input type="number" class="linea-margen"
+                         name="unidad_margen"
+                         value="{% if objeto %}{{ objeto.unidad_margen|default:0 }}{% endif %}"
+                         min="0" max="100"
+                         onchange="recalcularUnidad()"/>
+                </td>
+                <td class="linea-costo-venta">
+                  $<span id="unidad-costo-unitario">{% if objeto %}{{ objeto.unidad_costo_unitario|default:0 }}{% endif %}</span>
+                </td>
+                <td class="linea-subtotal">
+                  $<span id="unidad-total">{% if objeto %}{{ objeto.unidad_total|default:0 }}{% endif %}</span>
+                </td>
+                <td>
+                  <button type="button" class="linea-eliminar"
+                          onclick="eliminarUnidad()">×</button>
+                </td>
+              </tr>
             </tbody>
             <tfoot>
               <tr>

@@ -1252,6 +1252,7 @@ def edit_cotizacion(request, pk):
         campos_def  = get_campos_cotizaciones(),
         form_titulo = 'Editar cotizacion',
         url_lista   = 'reporte_cotizaciones',
+        template_form='reportes/page_form.html',
         extra_context = {
             'queryset_editar': qs,
             'objeto_extra':    cotizacion,

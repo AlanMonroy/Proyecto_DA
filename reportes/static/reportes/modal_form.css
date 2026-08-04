@@ -1,6 +1,6 @@
 /* ─── Modal form ─────────────────────────────────────────── */
 .modal-form {
-  max-width: 860px;
+  max-width: 1020px;
   width: 95%;
   text-align: left;
   padding: 0;
@@ -349,6 +349,17 @@
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--ink);
+}
+
+.lineas-tabla td:first-child,
+.lineas-tabla th:first-child {
+  min-width: 180px;
+  width: 30%;
+}
+
+.lineas-tabla .linea-desc-unidad {
+  width: 100%;
+  min-width: 180px;
 }
 
 .lineas-agregar { margin-top: 0.25rem; }

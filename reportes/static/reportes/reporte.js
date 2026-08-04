@@ -335,8 +335,8 @@ document.body.addEventListener('htmx:afterSwap', function() {
   });
 });
 
-
-function recalcularUnidad(nombre) {
+/*UNIDAD*/
+/*function recalcularUnidad(nombre) {
   const unidad_cantidad = parseInt(document.getElementById('field-unidad_cantidad').value);
   const unidad_costo = parseFloat(document.getElementById('field-unidad_costo').value);
   const unidad_exportacion = parseFloat(document.getElementById('field-unidad_exportacion'). value);
@@ -353,4 +353,34 @@ function recalcularUnidad(nombre) {
   const item_unidad_total = document.getElementById('field-unidad_total');
   item_unidad_costo_unitario.textContent = formatoMoneda(costo_unitario);
   item_unidad_total.textContent = formatoMoneda(subtotal);
+}*/
+
+function mostrarUnidad() {
+  document.getElementById('fila-unidad').style.display = '';
+  document.getElementById('btn-agregar-unidad').style.display = 'none';
+}
+
+function eliminarUnidad() {
+  const fila = document.getElementById('fila-unidad');
+  fila.style.display = 'none';
+  // Limpiar valores para que se guarden vacíos
+  fila.querySelectorAll('input').forEach(function(input) {
+    input.value = '';
+  });
+  document.getElementById('btn-agregar-unidad').style.display = '';
+}
+
+function recalcularUnidad() {
+  const costo       = parseFloat(document.querySelector('[name="unidad_costo"]').value) || 0;
+  const cantidad    = parseFloat(document.querySelector('[name="unidad_cantidad"]').value) || 0;
+  const exportacion = parseFloat(document.querySelector('[name="unidad_exportacion"]').value) || 0;
+  const margen      = parseFloat(document.querySelector('[name="unidad_margen"]').value) || 0;
+
+  const divisor      = 1 - (margen / 100);
+  const costoUnitario = divisor !== 0 && exportacion !== 0
+    ? redondear((costo * exportacion) / divisor, 2) : 0;
+  const total = redondear(costoUnitario * cantidad, 2);
+
+  document.getElementById('unidad-costo-unitario').textContent = formatoMoneda(costoUnitario).replace('$','');
+  document.getElementById('unidad-total').textContent = formatoMoneda(total).replace('$','');
 }
