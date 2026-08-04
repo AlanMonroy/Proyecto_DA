@@ -1050,6 +1050,7 @@ def reporte_cotizaciones(request):
         'url_exportar':         '/reportes/cotizaciones/exportar/',
         'url_formato_pdf':      '/reportes/cotizaciones/formato_pdf/',
         'btn_crear_texto':      'Nueva Cotizacion',
+        'template': 'page',
     }
     #print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
@@ -1063,7 +1064,7 @@ def get_campos_cotizaciones():
             'campo_hijo': 'proyecto',
             'url_cascada': '/reportes/proyectos-por-cliente/',
             'requerido': True,
-            'ancho': 'completo',
+            'ancho': 'medio',
             'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
         },
         {
@@ -1071,7 +1072,7 @@ def get_campos_cotizaciones():
             'label': 'Nombre de la cotizacion',
             'tipo': 'text',
             'requerido': True,
-            'ancho': 'completo',
+            'ancho': 'medio',
             'placeholder': 'Nombre de la cotizacion',
         },
         {
@@ -1082,7 +1083,7 @@ def get_campos_cotizaciones():
             'valor_trigger': 'nuevo_servicio',
             'campo_fk': 'proyecto',
             'requerido': False,
-            'ancho': 'completo',
+            'ancho': 'medio',
             'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
         },
         {
@@ -1091,7 +1092,7 @@ def get_campos_cotizaciones():
             'tipo': 'text',
             'requerido': False,
             'oculto': True,
-            'ancho': 'completo',
+            'ancho': 'medio',
             'placeholder': 'Servicio de la cotizacion',
         },
         {
@@ -1123,66 +1124,6 @@ def get_campos_cotizaciones():
             'queryset': Productos.objects.all().order_by('nombre'),
             'nombre_campo_total': 'Costo de partida total',
             'valor_campo_total': 'total',
-        },
-        {
-            'nombre': 'unidad_descripcion',
-            'label': 'Unidad - Descripcion',
-            'tipo': 'textarea',
-            'requerido': False,
-            'ancho': 'completo',
-            'placeholder': 'Descripcion de la unidad',
-        },
-        {
-            'nombre': 'unidad_cantidad',
-            'label': 'Unidad - Cantidad',
-            'tipo': 'number',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Cantidad de la unidad',
-            'onchange': 'recalcularUnidad()'
-        },
-        {
-            'nombre': 'unidad_costo',
-            'label': 'Unidad - Costo',
-            'tipo': 'decimal',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Costo de la unidad',
-            'onchange': 'recalcularUnidad()'
-        },
-        {
-            'nombre': 'unidad_exportacion',
-            'label': 'Unidad - Exportacion',
-            'tipo': 'decimal',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Exportacion de la unidad',
-            'onchange': 'recalcularUnidad()'
-        },
-        {
-            'nombre': 'unidad_margen',
-            'label': 'Unidad - Margen',
-            'tipo': 'number',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Margen de la unidad',
-            'onchange': 'recalcularUnidad()'
-        },
-        {
-            'nombre': 'unidad_costo_unitario',
-            'label': 'Unidad - Costo Unitario',
-            'tipo': 'readonly',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Costo unitario de la unidad',
-        },
-        {
-            'nombre': 'unidad_total',
-            'label': 'Unidad - Total',
-            'tipo': 'readonly',
-            'requerido': False,
-            'ancho': 'medio',
-            'placeholder': 'Total de la unidad',
         },
         {
             'nombre': 'pie_cotizacion',
@@ -1245,6 +1186,11 @@ def edit_cotizacion(request, pk):
 
     cotizacion.total = total_partida
 
+    if request.headers.get("HX-Request"):
+        template = "reportes/modal_form.html"
+    else:
+        template = "reportes/page_form.html"
+
     return form_editar(
         request,
         model       = Cotizaciones,
@@ -1252,7 +1198,7 @@ def edit_cotizacion(request, pk):
         campos_def  = get_campos_cotizaciones(),
         form_titulo = 'Editar cotizacion',
         url_lista   = 'reporte_cotizaciones',
-        template_form='reportes/page_form.html',
+        template_form = template,
         extra_context = {
             'queryset_editar': qs,
             'objeto_extra':    cotizacion,

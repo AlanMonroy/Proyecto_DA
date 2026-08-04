@@ -235,6 +235,51 @@ function lineasActualizar(nombre) {
     suma = redondear(suma + subtotal, 2);  // ← redondear la suma acumulada
   });
 
+  // Agregar unidad al total
+  const filaUnidad = document.getElementById('fila-unidad');
+
+  if (filaUnidad && filaUnidad.style.display !== 'none') {
+
+      const costo = parseFloat(
+          filaUnidad.querySelector("[name='unidad_costo']").value
+      ) || 0;
+
+      const cantidad = parseInt(
+          filaUnidad.querySelector("[name='unidad_cantidad']").value
+      ) || 0;
+
+      const exportacion = parseFloat(
+          filaUnidad.querySelector("[name='unidad_exportacion']").value
+      ) || 0;
+
+      const margen = parseFloat(
+          filaUnidad.querySelector("[name='unidad_margen']").value
+      ) || 0;
+
+      const divisor = 1 - (margen / 100);
+
+      const costoUnitario =
+          (divisor !== 0 && exportacion !== 0)
+              ? redondear((costo * exportacion) / divisor, 2)
+              : 0;
+
+      const subtotalUnidad = redondear(
+          costoUnitario * cantidad,
+          2
+      );
+
+      const celdaCosto = filaUnidad.querySelector(".linea-costo-venta");
+      const celdaTotal = filaUnidad.querySelector(".linea-subtotal");
+
+      celdaCosto.textContent = formatoMoneda(costoUnitario);
+      celdaTotal.textContent = formatoMoneda(subtotalUnidad);
+
+      suma = redondear(
+          suma + subtotalUnidad,
+          2
+      );
+  }
+
   if (total) total.textContent = formatoMoneda(suma);
 }
 
@@ -336,25 +381,6 @@ document.body.addEventListener('htmx:afterSwap', function() {
 });
 
 /*UNIDAD*/
-/*function recalcularUnidad(nombre) {
-  const unidad_cantidad = parseInt(document.getElementById('field-unidad_cantidad').value);
-  const unidad_costo = parseFloat(document.getElementById('field-unidad_costo').value);
-  const unidad_exportacion = parseFloat(document.getElementById('field-unidad_exportacion'). value);
-  const unidad_margen = parseFloat(document.getElementById('field-unidad_margen').value);
-
-  const divisor= 1 - (unidad_margen / 100);
-  const costo_unitario = (divisor !== 0 && unidad_exportacion !== 0)
-    ? redondear((unidad_costo * unidad_exportacion) / divisor, 2)
-    : 0;
-
-  const subtotal = redondear(costo_unitario * unidad_cantidad, 2);
-
-  const item_unidad_costo_unitario = document.getElementById('field-unidad_costo_unitario');
-  const item_unidad_total = document.getElementById('field-unidad_total');
-  item_unidad_costo_unitario.textContent = formatoMoneda(costo_unitario);
-  item_unidad_total.textContent = formatoMoneda(subtotal);
-}*/
-
 function mostrarUnidad() {
   document.getElementById('fila-unidad').style.display = '';
   document.getElementById('btn-agregar-unidad').style.display = 'none';
@@ -370,17 +396,4 @@ function eliminarUnidad() {
   document.getElementById('btn-agregar-unidad').style.display = '';
 }
 
-function recalcularUnidad() {
-  const costo       = parseFloat(document.querySelector('[name="unidad_costo"]').value) || 0;
-  const cantidad    = parseFloat(document.querySelector('[name="unidad_cantidad"]').value) || 0;
-  const exportacion = parseFloat(document.querySelector('[name="unidad_exportacion"]').value) || 0;
-  const margen      = parseFloat(document.querySelector('[name="unidad_margen"]').value) || 0;
 
-  const divisor      = 1 - (margen / 100);
-  const costoUnitario = divisor !== 0 && exportacion !== 0
-    ? redondear((costo * exportacion) / divisor, 2) : 0;
-  const total = redondear(costoUnitario * cantidad, 2);
-
-  document.getElementById('unidad-costo-unitario').textContent = formatoMoneda(costoUnitario).replace('$','');
-  document.getElementById('unidad-total').textContent = formatoMoneda(total).replace('$','');
-}

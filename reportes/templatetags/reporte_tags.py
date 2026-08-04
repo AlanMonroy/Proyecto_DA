@@ -20,6 +20,16 @@ def get_attr(obj, attr):
         print(f"get_attr error: {e}")
         return '—'
 
+@register.filter(name='get_attr_safe')
+def get_attr_safe(obj, attr):
+    if obj is None:
+        return None
+    try:
+        valor = getattr(obj, attr, None)
+        return valor
+    except Exception:
+        return None
+
 @register.filter
 def pluralize(value, suffix='s'):
     """Simple pluralize en español."""

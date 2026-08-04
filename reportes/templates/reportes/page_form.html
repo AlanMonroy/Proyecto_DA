@@ -5,9 +5,9 @@
 {% block title %}{{ form_titulo }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{% static 'reportes/css/reporte.css' %}">
-<link rel="stylesheet" href="{% static 'reportes/css/modal_form.css' %}">
-<link rel="stylesheet" href="{% static 'reportes/css/form_page.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/reporte.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/modal_form.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/form_page.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -26,16 +26,6 @@
       <h1 class="form-page-titulo">{{ form_titulo }}</h1>
     </div>
     <div class="form-page-header-right">
-      {% if objeto and url_pdf %}
-      <a href="{{ url_pdf }}" class="btn btn-outline" target="_blank">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Descargar PDF
-      </a>
-      {% endif %}
     </div>
   </div>
 
@@ -313,7 +303,7 @@
             </thead>
             <tbody id="lineas-body-{{ campo.nombre }}">
               {% for linea in campo.lineas_actuales %}
-              <tr class="linea-row" data-producto-id="{{ linea.producto_id }}">
+              <tr class="linea-row" data-producto-id="{{ linea.producto_id }}" data-tipo="producto">
                 <td>{{ linea.nombre }}</td>
                 <td class="linea-costo">${{ linea.costo }}</td>
                 <td>
@@ -345,44 +335,48 @@
               {% endfor %}
 
               {# ── Fila unidad editable ── #}
-              <tr class="linea-row linea-unidad" id="fila-unidad"
-                  {% if not objeto or not objeto.unidad_costo %}style="display:none;"{% endif %}>
-                <td>
-                  <textarea class="linea-desc-unidad"
-                            name="unidad_descripcion"
-                            placeholder="Descripción de la unidad"
-                            rows="1"
-                            onfocus="this.rows=6"
-                            onblur="this.rows=1"
-                            style="resize:none; transition: all 0.2s ease; width:100%;">{% if objeto %}{{ objeto.unidad_descripcion|default:'' }}{% endif %}</textarea>
+              <tr class="linea-row linea-unidad" id="fila-unidad" data-tipo="unidad" {% if not objeto or not objeto.unidad_costo %}style="display:none;"{% endif %}>
+                <td class="linea-unidad-producto">
+                    <div class="linea-unidad-titulo">
+                        Unidad de servicio
+                    </div>
+
+                    <textarea
+                        class="linea-desc-unidad"
+                        name="unidad_descripcion"
+                        placeholder="Describe el servicio..."
+                        rows="2"
+                        onfocus="this.rows=5"
+                        onblur="this.rows=2">{% if objeto %}{{ objeto.unidad_descripcion|default:'' }}{% endif %}</textarea>
+
                 </td>
                 <td>
                   <input type="number" class="linea-costo"
                          name="unidad_costo"
                          value="{% if objeto %}{{ objeto.unidad_costo|default:0 }}{% endif %}"
                          step="0.01" min="0"
-                         onchange="recalcularUnidad()"/>
+                         onchange="lineasActualizar('productos')"/>
                 </td>
                 <td>
                   <input type="number" class="linea-cantidad"
                          name="unidad_cantidad"
                          value="{% if objeto %}{{ objeto.unidad_cantidad|default:1 }}{% endif %}"
                          min="1"
-                         onchange="recalcularUnidad()"/>
+                         onchange="lineasActualizar('productos')"/>
                 </td>
                 <td>
                   <input type="number" class="linea-exportacion"
                          name="unidad_exportacion"
                          value="{% if objeto %}{{ objeto.unidad_exportacion|default:1 }}{% endif %}"
                          step="0.01" min="0"
-                         onchange="recalcularUnidad()"/>
+                         onchange="lineasActualizar('productos')"/>
                 </td>
                 <td>
                   <input type="number" class="linea-margen"
                          name="unidad_margen"
                          value="{% if objeto %}{{ objeto.unidad_margen|default:0 }}{% endif %}"
                          min="0" max="100"
-                         onchange="recalcularUnidad()"/>
+                         onchange="lineasActualizar('productos')"/>
                 </td>
                 <td class="linea-costo-venta">
                   $<span id="unidad-costo-unitario">{% if objeto %}{{ objeto.unidad_costo_unitario|default:0 }}{% endif %}</span>
@@ -410,34 +404,36 @@
             </tfoot>
           </table>
 
-          <div class="lineas-agregar">
-            <div class="lov-input-wrap">
-              <input type="text" class="lov-input"
-                     placeholder="Buscar producto para agregar..."
-                     autocomplete="off"
-                     oninput="lineasBuscar('{{ campo.nombre }}', this.value)"
-                     onfocus="lineasBuscar('{{ campo.nombre }}', this.value)" />
-              <div class="lov-dropdown" id="lineas-dropdown-{{ campo.nombre }}">
-                {% for opcion in campo.opciones %}
-                <div class="lov-opcion"
-                     data-id="{{ opcion.producto_id }}"
-                     data-nombre="{{ opcion.nombre }}"
-                     data-costo="{{ opcion.costo }}"
-                     onclick="lineasAgregar('{{ campo.nombre }}', '{{ opcion.producto_id }}', '{{ opcion.nombre }}', {{ opcion.costo }}, this)">
-                  {{ opcion.nombre }} — ${{ opcion.costo }}
+          <div class="lineas-controles">
+            <div class="lineas-agregar">
+              <div class="lov-input-wrap">
+                <input type="text" class="lov-input"
+                       placeholder="Buscar producto para agregar..."
+                       autocomplete="off"
+                       oninput="lineasBuscar('{{ campo.nombre }}', this.value)"
+                       onfocus="lineasBuscar('{{ campo.nombre }}', this.value)" />
+                <div class="lov-dropdown" id="lineas-dropdown-{{ campo.nombre }}">
+                  {% for opcion in campo.opciones %}
+                  <div class="lov-opcion"
+                       data-id="{{ opcion.producto_id }}"
+                       data-nombre="{{ opcion.nombre }}"
+                       data-costo="{{ opcion.costo }}"
+                       onclick="lineasAgregar('{{ campo.nombre }}', '{{ opcion.producto_id }}', '{{ opcion.nombre }}', {{ opcion.costo }}, this)">
+                    {{ opcion.nombre }} — ${{ opcion.costo }}
+                  </div>
+                  {% endfor %}
                 </div>
-                {% endfor %}
               </div>
             </div>
+            <button type="button" class="btn btn-outline btn-sm"
+              onclick="mostrarUnidad()" id="btn-agregar-unidad"
+              {% if objeto and objeto.unidad_costo %}style="display:none;"{% endif %}>
+              + Agregar unidad de servicio
+            </button>
           </div>
 
-          <button type="button" class="btn btn-outline btn-sm"
-                  onclick="mostrarUnidad()" id="btn-agregar-unidad"
-                  {% if objeto and objeto.unidad_costo %}style="display:none;"{% endif %}>
-            + Agregar unidad de servicio
-          </button>
-
         </div>
+
 
         <!-- FILE -->
         {% elif campo.tipo == 'file' %}
@@ -481,9 +477,20 @@
       {% endfor %}
     </div><!-- /form-page-body -->
 
-    <!-- ── Footer fijo ──────────────────────────────── -->
-    <div class="form-page-footer">
+    <!-- Footer -->
+    <div class="modal-form-footer">
       <a href="javascript:history.back()" class="btn btn-outline">Cancelar</a>
+      {% if objeto and url_pdf %}
+      <a href="{{ url_pdf }}"
+         class="btn btn-outline" target="_blank">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar PDF
+      </a>
+      {% endif %}
       <button type="submit" class="btn btn-primary">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <polyline points="20 6 9 17 4 12"/>
@@ -498,5 +505,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'reportes/js/reporte.js' %}"></script>
-{% endblock %}
+    <script src="{% static 'reportes/reporte.js' %}"></script>
+{%endblock%}

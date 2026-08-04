@@ -291,20 +291,34 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
             try:
                 # ── Calcular campos readonly ──────────────────────────
                 if hasattr(objeto, 'unidad_costo_unitario'):
-                    unidad_costo = Decimal(str(request.POST.get('unidad_costo', 0) or 0))  # ← request.POST
-                    unidad_exp = Decimal(str(request.POST.get('unidad_exportacion', 0) or 0))  # ← request.POST
-                    unidad_margen = Decimal(str(request.POST.get('unidad_margen', 0) or 0))  # ← request.POST
-                    unidad_cant = Decimal(str(request.POST.get('unidad_cantidad', 0) or 0))  # ← request.POST
 
-                    divisor = Decimal('1') - (unidad_margen / Decimal('100'))
-                    costo_unitario = (
-                        (unidad_costo * unidad_exp / divisor).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
-                        if divisor and unidad_exp else Decimal('0')
-                    )
+                    objeto.unidad_descripcion = request.POST.get(
+                        "unidad_descripcion", ""
+                    ).strip()
+
+                    unidad_costo = Decimal(str(request.POST.get("unidad_costo", 0) or 0))
+                    unidad_exp = Decimal(str(request.POST.get("unidad_exportacion", 0) or 0))
+                    unidad_margen = Decimal(str(request.POST.get("unidad_margen", 0) or 0))
+                    unidad_cant = Decimal(str(request.POST.get("unidad_cantidad", 0) or 0))
+
+                    objeto.unidad_costo = unidad_costo
+                    objeto.unidad_exportacion = unidad_exp
+                    objeto.unidad_margen = unidad_margen
+                    objeto.unidad_cantidad = unidad_cant
+
+                    divisor = Decimal("1") - (unidad_margen / Decimal("100"))
+
+                    if divisor and unidad_exp:
+                        costo_unitario = (
+                                unidad_costo * unidad_exp / divisor
+                        ).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+                    else:
+                        costo_unitario = Decimal("0")
+
                     objeto.unidad_costo_unitario = costo_unitario
-                    objeto.unidad_total = (costo_unitario * unidad_cant).quantize(
-                        Decimal('0.00'), rounding=ROUND_HALF_UP
-                    )
+                    objeto.unidad_total = (
+                            costo_unitario * unidad_cant
+                    ).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
 
                 objeto.save()
 
