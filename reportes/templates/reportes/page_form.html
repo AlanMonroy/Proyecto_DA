@@ -7,7 +7,7 @@
 {% block styles %}
 <link rel="stylesheet" href="{% static 'reportes/reporte.css' %}">
 <link rel="stylesheet" href="{% static 'reportes/modal_form.css' %}">
-<link rel="stylesheet" href="{% static 'reportes/form_page.css' %}">
+<link rel="stylesheet" href="{% static 'reportes/page_form.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -353,8 +353,8 @@
                 <td>
                   <input type="number" class="linea-costo"
                          name="unidad_costo"
-                         value="{% if objeto %}{{ objeto.unidad_costo|default:0 }}{% endif %}"
-                         step="0.01" min="0"
+                         value="{% if objeto %}{{ objeto.unidad_costo|default:1 }}{% endif %}"
+                         step="0.01" min="1"
                          onchange="lineasActualizar('productos')"/>
                 </td>
                 <td>
@@ -368,14 +368,14 @@
                   <input type="number" class="linea-exportacion"
                          name="unidad_exportacion"
                          value="{% if objeto %}{{ objeto.unidad_exportacion|default:1 }}{% endif %}"
-                         step="0.01" min="0"
+                         step="0.01" min="1"
                          onchange="lineasActualizar('productos')"/>
                 </td>
                 <td>
                   <input type="number" class="linea-margen"
                          name="unidad_margen"
-                         value="{% if objeto %}{{ objeto.unidad_margen|default:0 }}{% endif %}"
-                         min="0" max="100"
+                         value="{% if objeto %}{{ objeto.unidad_margen|default:1 }}{% endif %}"
+                         min="1" max="100"
                          onchange="lineasActualizar('productos')"/>
                 </td>
                 <td class="linea-costo-venta">
@@ -478,7 +478,7 @@
     </div><!-- /form-page-body -->
 
     <!-- Footer -->
-    <div class="modal-form-footer">
+    <div class="page-form-footer">
       <a href="javascript:history.back()" class="btn btn-outline">Cancelar</a>
       {% if objeto and url_pdf %}
       <a href="{{ url_pdf }}"
@@ -506,4 +506,12 @@
 
 {% block scripts %}
     <script src="{% static 'reportes/reporte.js' %}"></script>
+    <script>
+      /*Evita que al dar enter haga submit*/
+      document.getElementById("form-page-form").addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+              e.preventDefault();
+          }
+      });
+    </script>
 {%endblock%}

@@ -1,0 +1,18 @@
+.page-form-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1.5px solid var(--border);
+  padding: 1rem 1.75rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  z-index: 10;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+
+.form-page-body {
+  padding-bottom: 80px;
+}

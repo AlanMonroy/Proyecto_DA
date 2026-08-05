@@ -1,6 +1,6 @@
 /* ─── Modal form ─────────────────────────────────────────── */
 .modal-form {
-  max-width: 860px;
+  max-width: 1020px;
   width: 95%;
   text-align: left;
   padding: 0;
@@ -97,6 +97,7 @@
   background: #fff;
   outline: none;
   transition: border-color var(--trans), box-shadow var(--trans);
+  margin-bottom: .5rem;
 }
 
 .form-field textarea {
@@ -351,7 +352,16 @@
   color: var(--ink);
 }
 
-.lineas-agregar { margin-top: 0.25rem; }
+.lineas-tabla td:first-child,
+.lineas-tabla th:first-child {
+  min-width: 180px;
+  width: 30%;
+}
+
+.lineas-tabla .linea-desc-unidad {
+  width: 100%;
+  min-width: 180px;
+}
 
 .lineas-tabla tfoot td {
   padding: 0.6rem;
@@ -433,4 +443,40 @@
     object-fit: contain;
     display: block;
     border-radius: 4px;
+}
+
+.linea-unidad-producto{
+    min-width:320px;
+}
+
+.linea-unidad-titulo{
+    font-weight:600;
+    color:#444;
+    margin-bottom:6px;
+}
+
+.linea-desc-unidad{
+    width:100%;
+    resize:vertical;
+    border:1px solid #d9d9d9;
+    border-radius:6px;
+    padding:8px;
+    font-size:.9rem;
+    box-sizing:border-box;
+}
+
+.lineas-controles{
+    display:flex;
+    align-items:flex-start;
+    gap:1rem;
+    margin-top:1rem;
+}
+
+.lineas-agregar{
+    flex:1;
+    margin-top: 0.25rem;
+}
+
+#btn-agregar-unidad{
+    margin-left:auto;
 }

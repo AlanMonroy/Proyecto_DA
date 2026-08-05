@@ -137,20 +137,34 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
 
                 # ── Calcular campos readonly ──────────────────────────
                 if hasattr(obj, 'unidad_costo_unitario'):
-                    unidad_costo = Decimal(str(datos.get('unidad_costo', 0) or 0))
-                    unidad_exp = Decimal(str(datos.get('unidad_exportacion', 0) or 0))
-                    unidad_margen = Decimal(str(datos.get('unidad_margen', 0) or 0))
-                    unidad_cant = Decimal(str(datos.get('unidad_cantidad', 0) or 0))
 
-                    divisor = Decimal('1') - (unidad_margen / Decimal('100'))
-                    costo_unitario = (
-                        (unidad_costo * unidad_exp / divisor).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
-                        if divisor and unidad_exp else Decimal('0')
-                    )
+                    obj.unidad_descripcion = request.POST.get(
+                        "unidad_descripcion", ""
+                    ).strip()
+
+                    unidad_costo = Decimal(str(request.POST.get("unidad_costo", 0) or 0))
+                    unidad_exp = Decimal(str(request.POST.get("unidad_exportacion", 0) or 0))
+                    unidad_margen = Decimal(str(request.POST.get("unidad_margen", 0) or 0))
+                    unidad_cant = Decimal(str(request.POST.get("unidad_cantidad", 0) or 0))
+
+                    obj.unidad_costo = unidad_costo
+                    obj.unidad_exportacion = unidad_exp
+                    obj.unidad_margen = unidad_margen
+                    obj.unidad_cantidad = unidad_cant
+
+                    divisor = Decimal("1") - (unidad_margen / Decimal("100"))
+
+                    if divisor and unidad_exp:
+                        costo_unitario = (
+                                unidad_costo * unidad_exp / divisor
+                        ).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+                    else:
+                        costo_unitario = Decimal("0")
+
                     obj.unidad_costo_unitario = costo_unitario
-                    obj.unidad_total = (costo_unitario * unidad_cant).quantize(
-                        Decimal('0.00'), rounding=ROUND_HALF_UP
-                    )
+                    obj.unidad_total = (
+                            costo_unitario * unidad_cant
+                    ).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
 
                 obj.save()  # ← obj.pk ya existe aquí
 
@@ -199,9 +213,16 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                                 except Exception as e:
                                     print(f"Error al crear: {e}")
 
-                response = HttpResponse(status=204)
-                response['HX-Trigger'] = 'refreshTabla'
-                return response
+
+                # Si es página completa redirigir, si es HTMX responder 204
+                if request.htmx:
+                    response = HttpResponse(status=204)
+                    response['HX-Trigger'] = 'refreshTabla'
+                    return response
+                else:
+                    from django.shortcuts import redirect
+                    return redirect(url_lista)  # ← redirige al reporte
+
             except Exception as e:
                 errores['__all__'] = str(e)
 
@@ -375,9 +396,14 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                                 except Exception as e:
                                     print(f"Error al crear: {e}")
 
-                response = HttpResponse(status=204)
-                response['HX-Trigger'] = 'refreshTabla'
-                return response
+                # Si es página completa redirigir, si es HTMX responder 204
+                if request.htmx:
+                    response = HttpResponse(status=204)
+                    response['HX-Trigger'] = 'refreshTabla'
+                    return response
+                else:
+                    from django.shortcuts import redirect
+                    return redirect(url_lista)  # ← redirige al reporte
             except Exception as e:
                 errores['__all__'] = str(e)
 

@@ -1014,7 +1014,9 @@ def reporte_cotizaciones(request):
                 ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
                 total_partida += (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
 
+        total_partida += cotizacion.unidad_total
         cotizacion.total = total_partida
+
     # Paginar la lista con totales ya calculados
     paginator = Paginator(qs_list, per_page)
     registros = paginator.get_page(page)
@@ -1137,12 +1139,18 @@ def get_campos_cotizaciones():
 
 @login_requerido
 def create_cotizacion(request):
+    if request.headers.get("HX-Request"):
+        template = "reportes/modal_form.html"
+    else:
+        template = "reportes/page_form.html"
+
     return form_crear(
         request,
         model=Cotizaciones,
         campos_def=get_campos_cotizaciones(),
         form_titulo='Nueva cotizacion',
-        url_lista='reporte_cotizaciones',
+        url_lista='reportes:reporte_cotizaciones',
+        template_form=template,
     )
 
 @login_requerido
@@ -1164,8 +1172,8 @@ def edit_cotizacion(request, pk):
 
     # Calcular total solo para esta cotizacion
     cotizacion = qs.get(pk=pk)
-    print(f"unidad_costo_unitario: {cotizacion.unidad_costo_unitario}")
-    print(f"unidad_total: {cotizacion.unidad_total}")
+    #print(f"unidad_costo_unitario: {cotizacion.unidad_costo_unitario}")
+    #print(f"unidad_total: {cotizacion.unidad_total}")
     #print(f"dict completo: {cotizacion.__dict__}")
     productos  = CotizacionProductos.objects.filter(
         cotizacion_id=pk
@@ -1184,6 +1192,7 @@ def edit_cotizacion(request, pk):
             ).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
             total_partida += (costo_unitario * cantidad).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
 
+    total_partida += cotizacion.unidad_total
     cotizacion.total = total_partida
 
     if request.headers.get("HX-Request"):
@@ -1197,7 +1206,7 @@ def edit_cotizacion(request, pk):
         pk          = pk,
         campos_def  = get_campos_cotizaciones(),
         form_titulo = 'Editar cotizacion',
-        url_lista   = 'reporte_cotizaciones',
+        url_lista   = 'reportes:reporte_cotizaciones',
         template_form = template,
         extra_context = {
             'queryset_editar': qs,

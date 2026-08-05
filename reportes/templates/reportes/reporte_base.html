@@ -22,16 +22,19 @@
     </div>
     <div class="reporte-header-right">
       {% if puede_crear %}
-          <!--<a href="{{ url_crear }}" class="btn btn-primary">
+        {% if template == "page" %}
+          <a href="{{ url_crear }}" class="btn btn-primary">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             {{ btn_crear_texto|default:"Nuevo registro" }}
-          </a>-->
+          </a>
+        {% else %}
           <button hx-get="{{ url_crear }}"
                hx-target="#htmx-modal"
                hx-swap="innerHTML"
                class="btn btn-primary">
               + {{ btn_crear_texto|default:"Nuevo registro" }}
-            </button>
+          </button>
+        {% endif %}
       {% endif %}
       {% if puede_exportar %}
         <a href="{{ url_exportar }}" class="btn btn-outline">
