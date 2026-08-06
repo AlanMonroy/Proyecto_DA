@@ -6,7 +6,7 @@ from django.db.models.functions import Abs, NullIf, Cast
 from users.decorators import login_requerido
 from .views_crud import form_crear, form_editar, form_eliminar, exportar_csv
 from users.models import Usuario, Rol
-from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, Costos, Productos, Cotizaciones, CotizacionProductos, FormatoPdf
+from .models import Refacciones, Proyectos, ProyectoEstatus, ProyectoPrioridad, Cliente, ProyectoAsignacion, ProyectosActividades, Costos, Productos, Cotizaciones, CotizacionProductos, FormatoPdf
 import time
 from decimal import Decimal, ROUND_HALF_UP
 from supabase import create_client
@@ -28,6 +28,225 @@ def proyectos_por_cliente(request):
     ]
     return JsonResponse(data, safe=False)
 
+#---------------ACTIVIDADES---------------#
+@login_requerido
+def reporte_proyectos_actividades(request, pk):
+
+    q         = request.GET.get('q', '').strip()
+    columna   = request.GET.get('columna', '')
+    orden     = request.GET.get('orden', 'proyect_id')
+    direccion = request.GET.get('dir', 'asc')
+    per_page  = int(request.GET.get('per_page', 10))
+    page      = request.GET.get('page', 1)
+
+    qs = ProyectosActividades.objects.filter(proyecto_id=pk).all()
+
+    if q:
+        if columna == 'proyecto_id':
+            qs = qs.filter(proyecto_id__icontains=q)
+        elif columna == 'empleado_id':
+            qs = qs.filter(empleado_id__icontains=q)
+        else:
+            qs = qs.filter(
+                Q(proyecto_id__icontains=q) |
+                Q(empleado_id__icontains=q)
+            )
+
+    campos_validos = ['proyectos_actividades_id', 'proyecto_id', 'empleado_id', 'fecha_creacion']
+    if orden in campos_validos:
+        orden_str = f'-{orden}' if direccion == 'desc' else orden
+        qs = qs.order_by(orden_str)
+
+    per_page_opciones = [10, 25, 50, 100]
+    if per_page not in per_page_opciones:
+        per_page = 10
+
+    paginator = Paginator(qs, per_page)
+    registros = paginator.get_page(page)
+
+    columnas = [
+        {'campo': 'proyectos_actividades_id', 'label': 'ID', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'proyecto', 'label': 'Proyecto', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'empleado', 'label': 'Empleado', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'actividad_realizada', 'label': 'Actividad Realizada', 'tipo': 'texto', 'ordenable': True},
+        {'campo': 'horas', 'label': 'Horas', 'tipo': 'numero', 'ordenable': True},
+        {'campo': 'fecha_creacion', 'label': 'Fecha', 'tipo': 'datetime', 'ordenable': True},
+    ]
+
+    columnas_filtrables = [
+        {'campo': 'proyecto',      'label': 'Proyecto'},
+        {'campo': 'empleado', 'label': 'Empleado'},
+    ]
+
+    context = {
+        'registros':           registros,
+        'total_registros':     paginator.count,
+        'columnas':            columnas,
+        'columnas_filtrables': columnas_filtrables,
+        'per_page':            per_page,
+        'per_page_opciones':   per_page_opciones,
+        'reporte_titulo':      'Actividades de Proyecto',
+        'reporte_subtitulo':   'Gestión actividades en el proyecto',
+        'reporte_breadcrumb':  'Inicio / Actividades',
+        'puede_crear':         True,
+        'puede_editar':        True,
+        'puede_eliminar':      True,
+        'puede_exportar':      True,
+        'url_crear':           '/reportes/proyectos_actividades/crear/',
+        'btn_crear_texto':     'Nueva actividad',
+    }
+
+    return render(request, 'reportes/reporte_base.html', context)
+
+def get_campos_actividades():
+    return [
+        {
+            'nombre': 'nombre',
+            'label': 'Nombre',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del proyecto',
+        },
+        {
+            'nombre': 'descripcion',
+            'label': 'Descripción',
+            'tipo': 'textarea',
+            'requerido': False,
+            'ancho': 'completo',
+            'placeholder': 'Descripción del proyecto',
+            'filas': 3,
+        },
+        {
+            'nombre': 'cliente',
+            'label': 'Cliente',
+            'tipo': 'select',
+            'campo_fk': 'cliente',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
+        },
+        {
+            'nombre': 'estatus',
+            'label': 'Estatus',
+            'tipo': 'select',
+            'campo_fk': 'estatus',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': ProyectoEstatus.objects.filter(activo=True).order_by('orden'),
+        },
+        {
+            'nombre': 'prioridad',
+            'label': 'Prioridad',
+            'tipo': 'select',
+            'campo_fk': 'prioridad',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': ProyectoPrioridad.objects.filter(activo=True).order_by('orden'),
+        },
+        {
+            'nombre': 'porcentaje_avance',
+            'label': 'Avance (%)',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+            'min': 0,
+            'max': 100,
+        },
+        {
+            'nombre': 'precio_venta',
+            'label': 'Precio de venta',
+            'tipo': 'decimal',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'tipo_proyecto',
+            'label': 'Tipo de Proyecto',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Ej. Interno, Externo',
+        },
+        {
+            'nombre': 'categoria',
+            'label': 'Categoría',
+            'tipo': 'text',
+            'requerido': False,
+            'ancho': 'medio',
+            'placeholder': 'Ej. Desarrollo, Mantenimiento',
+        },
+        {
+            'nombre': 'fecha_inicio',
+            'label': 'Fecha Inicio',
+            'tipo': 'date',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'fecha_fin',
+            'label': 'Fecha Fin',
+            'tipo': 'date',
+            'requerido': False,
+            'ancho': 'medio',
+        },
+        {
+            'nombre': 'activo',
+            'label': 'Activo',
+            'tipo': 'boolean',
+            'requerido': False,
+            'ancho': 'completo',
+            'label_check': 'Este proyecto está activo',
+        },
+        {
+            'nombre': 'usuarios_asignados',
+            'label': 'Usuarios asignados',
+            'tipo': 'lov',
+            'requerido': False,
+            'ancho': 'completo',
+            'solo_editar': True,
+            'especial': True,
+            'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
+            'campo_obj': 'proyecto',  # ← campo del proyecto
+            'campo_rel': 'empleado',  # ← campo del usuario
+            'queryset': Usuario.objects.all(),
+            'queryset_actual': None,
+        },
+    ]
+
+@login_requerido
+def proyectos_actividades_crear(request):
+    return form_crear(
+        request,
+        model=ProyectosActividades,
+        campos_def=get_campos_actividades(),
+        form_titulo='Nueva Actividad',
+        url_lista='reportes:proyectos_actividades',
+    )
+
+@login_requerido
+def proyectos_actividades_editar(request, pk):
+    campos = get_campos_proyecto()
+    for campo in campos:
+        if campo['nombre'] == 'usuarios_asignados':
+            campo['queryset_actual'] = ProyectosActividades.objects.filter(proyecto_id=pk).values_list('empleado_id',
+                                                                                                     flat=True)
+
+    return form_editar(
+        request,
+        model=ProyectosActividades,
+        pk=pk,
+        campos_def=campos,
+        form_titulo='Editar Actividad',
+        url_lista='reportes:proyectos_actividades',
+    )
+
+@login_requerido
+def proyectos_actividades_eliminar(request, pk):
+    return form_eliminar(request, ProyectosActividades, pk)
+
+
+#---------------USUARIOS---------------#
 @login_requerido
 def reporte_usuarios(request):
     # ── Parámetros GET ────────────────────────────────────────────

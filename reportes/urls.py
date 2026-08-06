@@ -16,6 +16,11 @@ urlpatterns = [
     path('proyectos/<int:pk>/editar/', views.proyecto_editar, name='proyecto_editar'),
     path('proyectos/<int:pk>/eliminar/', views.proyecto_eliminar, name='proyecto_eliminar'),
 
+    path('proyectos_actividades/<int:pk>/', views.reporte_proyectos_actividades, name='proyectos_actividades'),
+    path('proyectos_actividades/crear/', views.proyectos_actividades_crear,   name='proyectos_actividades_crear'),
+    path('proyectos_actividades/<int:pk>/editar/', views.proyectos_actividades_editar, name='proyectos_actividades_editar'),
+    path('proyectos_actividades/<int:pk>/eliminar/', views.proyectos_actividades_eliminar, name='proyectos_actividades_eliminar'),
+
     path('clientes/', views.reporte_clientes, name='reporte_clientes'),
     path('clientes/crear/', views.create_cliente, name='create_cliente'),
     path('clientes/<int:pk>/editar/', views.edit_cliente, name='edit_cliente'),
