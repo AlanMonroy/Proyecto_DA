@@ -396,4 +396,17 @@ function eliminarUnidad() {
   document.getElementById('btn-agregar-unidad').style.display = '';
 }
 
+function mostrarMensaje(texto) {
+  document.getElementById('modal-mensaje-texto').textContent = texto;
+  document.getElementById('modal-mensaje').classList.add('visible');
+}
+
+function cerrarMensaje() {
+  document.getElementById('modal-mensaje').classList.remove('visible');
+}
+
+document.getElementById('modal-mensaje').addEventListener('click', function(e) {
+  if (e.target === this) cerrarMensaje();
+});
+
 

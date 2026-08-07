@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load reporte_tags %}
+{% load tz %}
 
 {% block title %}{{ reporte_titulo }}{% endblock %}
 
@@ -23,17 +24,31 @@
     <div class="reporte-header-right">
       {% if puede_crear %}
         {% if template == "page" %}
-          <a href="{{ url_crear }}" class="btn btn-primary">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            {{ btn_crear_texto|default:"Nuevo registro" }}
-          </a>
+          {% if validaciones_crear %}
+            <button class="btn btn-primary btn-disabled"
+              onclick="mostrarMensaje('{{ validaciones_crear|first }}')">
+              + {{ btn_crear_texto }}
+            </button>
+          {% else %}
+            <a href="{{ url_crear }}" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              {{ btn_crear_texto|default:"Nuevo registro" }}
+            </a>
+          {% endif %}
         {% else %}
-          <button hx-get="{{ url_crear }}"
-               hx-target="#htmx-modal"
-               hx-swap="innerHTML"
-               class="btn btn-primary">
-              + {{ btn_crear_texto|default:"Nuevo registro" }}
-          </button>
+          {% if validaciones_crear %}
+            <button class="btn btn-primary btn-disabled"
+              onclick="mostrarMensaje('{{ validaciones_crear|first }}')">
+              + {{ btn_crear_texto }}
+            </button>
+          {% else %}
+            <button hx-get="{{ url_crear }}"
+                 hx-target="#htmx-modal"
+                 hx-swap="innerHTML"
+                 class="btn btn-primary">
+                + {{ btn_crear_texto|default:"Nuevo registro" }}
+            </button>
+          {% endif %}
         {% endif %}
       {% endif %}
       {% if puede_exportar %}
@@ -191,13 +206,13 @@
               {% if col.tipo == 'badge' %}
                 <span class="badge badge-{{ valor|lower }}">{{ valor }}</span>
               {% elif col.tipo == 'fecha' %}
-                {{ valor|date:"d/m/Y" }}
+                {{ valor|localtime|date:"d/m/Y" }}
               {% elif col.tipo == 'datetime' %}
-                {{ valor|date:"d/m/Y H:i" }}
+                {{ valor|localtime|date:"d/m/Y H:i" }}
               {% elif col.tipo == 'moneda' %}
                 ${{ valor|floatformat:2 }}
               {% elif col.tipo == 'numero' %}
-                {{ valor|floatformat:2 }}
+                {{ valor|floatformat:0 }}
               {% elif col.tipo == 'porcentaje' %}
                 {% if valor is not None %}{{ valor|floatformat:0 }}%{% else %}0%{% endif %}
               {% elif col.tipo == 'color_badge' %}
@@ -296,6 +311,24 @@
 
     <!-- Receptor del modal HTMX -->
     <div id="htmx-modal"></div>
+
+  <!-- Modal mensaje -->
+  <div class="modal-overlay" id="modal-mensaje">
+    <div class="modal">
+      <div class="modal-icon" style="background: #fff8e6;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a06a00" stroke-width="1.8">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <h3 class="modal-titulo">Aviso</h3>
+      <p class="modal-mensaje" id="modal-mensaje-texto"></p>
+      <div class="modal-acciones">
+        <button class="btn btn-primary" onclick="cerrarMensaje()">Entendido</button>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
 

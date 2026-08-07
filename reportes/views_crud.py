@@ -128,6 +128,10 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
                     errores['password1'] = 'La contraseña debe tener al menos 8 caracteres.'
 
         if not errores:
+            # Aplicar valores por defecto
+            defaults = extra_context.pop('defaults', {}) if extra_context else {}
+            datos.update(defaults)
+
             try:
                 obj = model(**datos)
                 if hasattr(obj, 'activo') and 'activo' not in datos:

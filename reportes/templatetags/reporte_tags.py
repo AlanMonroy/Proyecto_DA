@@ -3,6 +3,7 @@
 # Asegúrate de que la app tenga un archivo __init__.py en templatetags/
 
 from django import template
+from django.utils import timezone
 
 register = template.Library()
 
@@ -10,9 +11,7 @@ register = template.Library()
 def get_attr(obj, attr):
     try:
         valor = getattr(obj, attr, None)
-        #print(f"get_attr: obj={obj}, attr={attr}, valor={valor}, dict={obj.__dict__.get(attr)}")
-        if attr in ('unidad_costo_unitario', 'unidad_total'):
-            print(f"get_attr {attr}: valor={valor}, type={type(valor)}")
+
         if valor is not None:
             return valor
         return obj.__dict__.get(attr, '—')
