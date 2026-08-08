@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'reportes',
     'django_htmx',
     'django_browser_reload',
+    'dashboards'
 ]
 
 
