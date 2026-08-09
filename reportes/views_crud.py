@@ -118,6 +118,12 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
             elif valor:
                 datos[nombre] = valor
 
+        # Validaciones personalizadas
+        validar = extra_context.pop('validar', None) if extra_context else None
+        if validar:
+            errores_custom = validar(datos, request)
+            errores.update(errores_custom)
+
         if not errores:
             p1 = request.POST.get('password1', '')
             p2 = request.POST.get('password2', '')
@@ -313,6 +319,14 @@ def form_editar(request, model, pk, campos_def, form_titulo, url_lista,
                 setattr(objeto, nombre, None)
 
         if not errores:
+            # Validaciones personalizadas
+            validar = extra_context.pop('validar', None) if extra_context else None
+            if validar:
+                # En editar los valores están en el objeto
+                datos_editar = {f.name: getattr(objeto, f.name, None) for f in objeto._meta.fields}
+                errores_custom = validar(datos_editar, request)
+                errores.update(errores_custom)
+
             try:
                 # ── Calcular campos readonly ──────────────────────────
                 if hasattr(objeto, 'unidad_costo_unitario'):

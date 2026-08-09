@@ -317,13 +317,29 @@ def get_campos_usuario():
 
 @login_requerido
 def create_user(request):
-    print(f"CREATE USER - Method: {request.method}")
+    #print(f"CREATE USER - Method: {request.method}")
+    def validar(datos, request):
+        errores = {}
+        if datos.get('username'):
+            if Usuario.objects.filter(username=datos.get('username')).exists():
+                errores['username'] = 'El usuario ya existe.'
+        if datos.get('email'):
+            if Usuario.objects.filter(email=datos.get('email')).exists():
+                errores['email'] = 'Email ya existe.'
+        return errores
+
     return form_crear(
         request,
         model=Usuario,
         campos_def=get_campos_usuario(),
         form_titulo='Nuevo usuario',
         url_lista='reporte_usuarios',
+        extra_context={
+            'validar': validar,
+            'defaults': {
+                'empresa_id': request.session.get('usuario_empresa_id'),
+            }
+        }
     )
 
 @login_requerido
@@ -421,7 +437,8 @@ def reporte_proyectos(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
-    qs = Proyectos.objects.select_related(
+    empresa_id = request.session.get('usuario_empresa_id')
+    qs = Proyectos.objects.filter(empresa_id = empresa_id).select_related(
         'estatus', 'prioridad', 'cliente'
     ).annotate(
         total_costos=Sum('costos__costo'),
@@ -541,7 +558,7 @@ def get_campos_proyecto(request):
             'campo_fk': 'cliente',
             'requerido': True,
             'ancho': 'medio',
-            'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
+            'queryset': Cliente.objects.filter(activo=True, empresa_id = empresa_id).order_by('nombre_cliente'),
         },
         {
             'nombre': 'estatus',
@@ -621,7 +638,7 @@ def get_campos_proyecto(request):
             'tipo': 'lov',
             'requerido': False,
             'ancho': 'completo',
-            'solo_editar': True,
+            #'solo_editar': True,
             'especial': True,
             'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
             'campo_obj': 'proyecto',  # ← campo del proyecto
@@ -639,6 +656,11 @@ def proyecto_crear(request):
         campos_def=get_campos_proyecto(request),
         form_titulo='Nuevo Proyecto',
         url_lista='reporte_proyectos',
+        extra_context={
+            'defaults': {
+                'empresa_id': request.session.get('usuario_empresa_id'),
+            }
+        }
     )
 
 @login_requerido
@@ -673,7 +695,9 @@ def reporte_clientes(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
-    qs = Cliente.objects.all()
+    empresa_id = request.session.get('usuario_empresa_id')
+    qs = Cliente.objects.filter(empresa_id = empresa_id).all()
+    qs = qs.order_by('nombre_cliente')
 
     if q:
         if columna == 'nombre_cliente':
@@ -811,13 +835,18 @@ def get_campos_cliente():
 
 @login_requerido
 def create_cliente(request):
-    print(f"CREATE USER - Method: {request.method}")
+    #print(f"CREATE USER - Method: {request.method}")
     return form_crear(
         request,
         model=Cliente,
         campos_def=get_campos_cliente(),
         form_titulo='Nuevo cliente',
         url_lista='reporte_clientes',
+        extra_context={
+            'defaults': {
+                'empresa_id': request.session.get('usuario_empresa_id'),
+            }
+        }
     )
 
 @login_requerido
@@ -1115,7 +1144,8 @@ def reporte_cotizaciones(request):
     dec = DecimalField(max_digits=20, decimal_places=2)
     cien = Cast(Value(100), output_field=dec)
 
-    qs = Cotizaciones.objects.annotate(
+    empresa_id = request.session.get('usuario_empresa_id')
+    qs = Cotizaciones.objects.filter(cliente__empresa_id = empresa_id).annotate(
         costo_unitario=Sum(
             ExpressionWrapper(
                 (F('cotizacionproductos__producto__costo') * F('cotizacionproductos__exportacion')) /
@@ -1211,7 +1241,8 @@ def reporte_cotizaciones(request):
     #print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
 
-def get_campos_cotizaciones():
+def get_campos_cotizaciones(request):
+    empresa_id = request.session.get('usuario_empresa_id')
     return [
         {
             'nombre': 'cliente',
@@ -1221,7 +1252,7 @@ def get_campos_cotizaciones():
             'url_cascada': '/reportes/proyectos-por-cliente/',
             'requerido': True,
             'ancho': 'medio',
-            'queryset': Cliente.objects.filter(activo=True).order_by('nombre_cliente'),
+            'queryset': Cliente.objects.filter(activo=True, empresa_id = empresa_id).order_by('nombre_cliente'),
         },
         {
             'nombre': 'nombre',
@@ -1301,7 +1332,7 @@ def create_cotizacion(request):
     return form_crear(
         request,
         model=Cotizaciones,
-        campos_def=get_campos_cotizaciones(),
+        campos_def=get_campos_cotizaciones(request),
         form_titulo='Nueva cotizacion',
         url_lista='reportes:reporte_cotizaciones',
         template_form=template,
@@ -1358,7 +1389,7 @@ def edit_cotizacion(request, pk):
         request,
         model       = Cotizaciones,
         pk          = pk,
-        campos_def  = get_campos_cotizaciones(),
+        campos_def  = get_campos_cotizaciones(request),
         form_titulo = 'Editar cotizacion',
         url_lista   = 'reportes:reporte_cotizaciones',
         template_form = template,

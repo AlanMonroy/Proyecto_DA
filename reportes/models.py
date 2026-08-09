@@ -53,6 +53,12 @@ class Cliente(models.Model):
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    empresa = models.ForeignKey(
+        'users.Empresa',
+        on_delete=models.CASCADE,
+        db_column='empresa_id'
+    )
+
     class Meta:
         db_table = 'cliente'
         managed = False
@@ -78,6 +84,12 @@ class Proyectos(models.Model):
         Cliente,
         on_delete=models.PROTECT,
         db_column='cliente_id'
+    )
+
+    empresa = models.ForeignKey(
+        'users.Empresa',
+        on_delete=models.CASCADE,
+        db_column='empresa_id'
     )
 
     prioridad = models.ForeignKey(

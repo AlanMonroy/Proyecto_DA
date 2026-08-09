@@ -9,7 +9,8 @@ def proyectos(request):
     if request.session.get('usuario_rol') != 0:
         return redirect('home-user')
 
-    proyectos = Proyectos.objects.all()
+    empresa_id = request.session.get('usuario_empresa_id')
+    proyectos = Proyectos.objects.filter(empresa_id = empresa_id).all()
 
     #CALCULO DE HORAS
     hoy = timezone.now().date()
@@ -19,6 +20,7 @@ def proyectos(request):
         # Horas acumuladas del empleado en este proyecto
         horas = ProyectosActividades.objects.filter(
             proyecto_id=proyecto.pk,
+            proyecto__empresa_id = empresa_id
         ).aggregate(total=Sum('horas'))['total'] or 0
 
         # Días faltantes
@@ -34,7 +36,7 @@ def proyectos(request):
         })
 
     #-------------ORDENAR DATOS PARA EL CHART-------------#
-    actividades = ProyectosActividades.objects.values(
+    actividades = ProyectosActividades.objects.filter(proyecto__empresa_id = empresa_id).values(
         'proyecto_id',
         'proyecto__nombre',
         'empleado_id',
