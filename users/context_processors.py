@@ -13,7 +13,8 @@ def menu_usuario(request):
         try:
             reverse(opcion.url_name)  # verifica si la URL existe
             opciones_validas.append(opcion)
-        except NoReverseMatch:
+        except NoReverseMatch as e:
+            print(f"*******************Error en URL '{opcion.url_name}': {e}*******************")
             pass  # ignora opciones con URLs inválidas
 
     return {'menu_opciones': opciones_validas}

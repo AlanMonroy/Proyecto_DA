@@ -83,6 +83,7 @@
 .form-field input[type="number"],
 .form-field input[type="date"],
 .form-field input[type="datetime-local"],
+.form-field input[type="password"],
 .form-field textarea,
 .form-field .field-readonly,
 .form-field select {

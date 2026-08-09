@@ -41,14 +41,21 @@ def reporte_proyectos_actividades(request, pk):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
+    usuario_id = request.session.get('usuario_id')
+    usuario_rol = request.session.get('usuario_rol')
+
     qs = ProyectosActividades.objects.filter(proyecto_id=pk).all()
     qs = qs.order_by('-fecha_creacion')
+    if usuario_rol != 0:
+        qs = qs.filter(
+            empleado_id=usuario_id
+        )
 
     # Verificar si ya hay actividad hoy
     hoy = timezone.localdate()
     actividad_hoy = ProyectosActividades.objects.filter(
         proyecto_id=pk,
-        empleado_id=request.session.get('usuario_id'),
+        empleado_id=usuario_id,
         fecha_creacion__date=hoy
     ).exists()
 
@@ -81,6 +88,13 @@ def reporte_proyectos_actividades(request, pk):
         {'campo': 'horas', 'label': 'Horas', 'tipo': 'numero', 'ordenable': True},
         {'campo': 'fecha_creacion', 'label': 'Fecha', 'tipo': 'datetime', 'ordenable': True},
     ]
+    if usuario_rol == 0:
+        columnas.insert(1, {
+            'campo': 'empleado',
+            'label': 'Empleado',
+            'tipo': 'texto',
+            'ordenable': True
+        })
 
     columnas_filtrables = [
         {'campo': 'proyecto',      'label': 'Proyecto'},
@@ -250,6 +264,84 @@ def reporte_usuarios(request):
 
     return render(request, 'reportes/reporte_base.html', context)
 
+def get_campos_usuario():
+    return [
+        {
+            'nombre': 'username', #nombre en el modelos
+            'label': 'Usuario',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Nombre del usuario',
+        },
+        {
+            'nombre': 'email',
+            'label': 'Email',
+            'tipo': 'text',
+            'requerido': True,
+            'ancho': 'completo',
+            'placeholder': 'Correo electronico',
+            'filas': 3,
+        },
+        {
+            'nombre': 'password1',
+            'label': 'Contraseña',
+            'tipo': 'password',
+            'requerido': True,
+            'ancho': 'medio',
+            'especial': True,
+            'solo_crear': True,
+            'placeholder': 'Mínimo 8 caracteres',
+        },
+        {
+            'nombre': 'password2',
+            'label': 'Confirmar contraseña',
+            'tipo': 'password',
+            'requerido': True,
+            'ancho': 'medio',
+            'especial': True,
+            'solo_crear': True,
+            'placeholder': 'Repite la contraseña',
+        },
+        {
+            'nombre': 'rol',
+            'label': 'Rol',
+            'tipo': 'select',
+            'campo_fk': 'rol',
+            'requerido': True,
+            'ancho': 'medio',
+            'queryset': Rol.objects.order_by('rol_id'),
+        },
+    ]
+
+
+@login_requerido
+def create_user(request):
+    print(f"CREATE USER - Method: {request.method}")
+    return form_crear(
+        request,
+        model=Usuario,
+        campos_def=get_campos_usuario(),
+        form_titulo='Nuevo usuario',
+        url_lista='reporte_usuarios',
+    )
+
+@login_requerido
+def edit_user(request, pk):
+    return form_editar(
+        request,
+        model=Usuario,
+        pk=pk,
+        campos_def=get_campos_usuario(),
+        form_titulo='Editar usuario',
+        url_lista='reporte_usuarios',
+    )
+
+@login_requerido
+def delete_user(request, pk):
+    return form_eliminar(request, Usuario, pk)
+
+#-----------------------REFACCIONES-----------------------#
 @login_requerido
 def reporte_refacciones(request):
 
@@ -422,7 +514,8 @@ def reporte_proyectos(request):
     print(time.perf_counter() - inicio)
     return render(request, 'reportes/reporte_base.html', context)
 
-def get_campos_proyecto():
+def get_campos_proyecto(request):
+    empresa_id = request.session.get('usuario_empresa_id')
     return [
         {
             'nombre': 'nombre',
@@ -533,7 +626,7 @@ def get_campos_proyecto():
             'modelo_rel': ProyectoAsignacion,  # ← modelo intermedio
             'campo_obj': 'proyecto',  # ← campo del proyecto
             'campo_rel': 'empleado',  # ← campo del usuario
-            'queryset': Usuario.objects.all(),
+            'queryset': Usuario.objects.filter(empresa_id=empresa_id).all(),
             'queryset_actual': None,
         },
     ]
@@ -543,14 +636,14 @@ def proyecto_crear(request):
     return form_crear(
         request,
         model=Proyectos,
-        campos_def=get_campos_proyecto(),
+        campos_def=get_campos_proyecto(request),
         form_titulo='Nuevo Proyecto',
         url_lista='reporte_proyectos',
     )
 
 @login_requerido
 def proyecto_editar(request, pk):
-    campos = get_campos_proyecto()
+    campos = get_campos_proyecto(request)
     for campo in campos:
         if campo['nombre'] == 'usuarios_asignados':
             campo['queryset_actual'] = ProyectoAsignacion.objects.filter(proyecto_id=pk).values_list('empleado_id',
@@ -652,82 +745,6 @@ def reporte_clientes(request):
 
 
 # ── FORMULARIOS ───────────────────────────
-def get_campos_usuario():
-    return [
-        {
-            'nombre': 'username', #nombre en el modelos
-            'label': 'Usuario',
-            'tipo': 'text',
-            'requerido': True,
-            'ancho': 'completo',
-            'placeholder': 'Nombre del usuario',
-        },
-        {
-            'nombre': 'email',
-            'label': 'Email',
-            'tipo': 'text',
-            'requerido': True,
-            'ancho': 'completo',
-            'placeholder': 'Correo electronico',
-            'filas': 3,
-        },
-        {
-            'nombre': 'password1',
-            'label': 'Contraseña',
-            'tipo': 'password',
-            'requerido': True,
-            'ancho': 'medio',
-            'especial': True,
-            'solo_crear': True,
-            'placeholder': 'Mínimo 8 caracteres',
-        },
-        {
-            'nombre': 'password2',
-            'label': 'Confirmar contraseña',
-            'tipo': 'password',
-            'requerido': True,
-            'ancho': 'medio',
-            'especial': True,
-            'solo_crear': True,
-            'placeholder': 'Repite la contraseña',
-        },
-        {
-            'nombre': 'rol',
-            'label': 'Rol',
-            'tipo': 'select',
-            'campo_fk': 'rol',
-            'requerido': True,
-            'ancho': 'medio',
-            'queryset': Rol.objects.order_by('rol_id'),
-        },
-    ]
-
-
-@login_requerido
-def create_user(request):
-    print(f"CREATE USER - Method: {request.method}")
-    return form_crear(
-        request,
-        model=Usuario,
-        campos_def=get_campos_usuario(),
-        form_titulo='Nuevo usuario',
-        url_lista='reporte_usuarios',
-    )
-
-@login_requerido
-def edit_user(request, pk):
-    return form_editar(
-        request,
-        model=Usuario,
-        pk=pk,
-        campos_def=get_campos_usuario(),
-        form_titulo='Editar usuario',
-        url_lista='reporte_usuarios',
-    )
-
-@login_requerido
-def delete_user(request, pk):
-    return form_eliminar(request, Usuario, pk)
 
 #-----------CLIENTES------------#
 def get_campos_cliente():

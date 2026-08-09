@@ -142,7 +142,7 @@ class ProyectoAsignacion(models.Model):
         managed  = False
 
     def __str__(self):
-        return f'{self.proyecto} — {self.usuario}'
+        return f'{self.proyecto} — {self.empleado}'
 
 
 class ProyectosActividades(models.Model):

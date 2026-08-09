@@ -14,8 +14,7 @@ def proyectos(request):
     hoy = timezone.now().date()
     registros = []
 
-    for a in proyectos:
-        proyecto = a.proyecto_id
+    for proyecto in proyectos:
 
         # Horas acumuladas del empleado en este proyecto
         horas = ProyectosActividades.objects.filter(
@@ -39,4 +38,4 @@ def proyectos(request):
         'reporte_breadcrumb': 'Inicio / Proyectos',
     }
 
-    return render(request, 'dashboard/proyectos.html', context)
+    return render(request, 'dashboards/proyectos.html', context)

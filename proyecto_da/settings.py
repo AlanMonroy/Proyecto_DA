@@ -50,9 +50,9 @@ INSTALLED_APPS = [
     'home',
     'users',
     'reportes',
+    'dashboards',
     'django_htmx',
     'django_browser_reload',
-    'dashboards'
 ]
 
 
