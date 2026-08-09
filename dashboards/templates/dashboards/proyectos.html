@@ -5,6 +5,7 @@
 
 {% block styles %}
     <link rel="stylesheet" href="{% static 'dashboards/css/proyectos.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 {% endblock %}
 
 {% block content %}
@@ -15,6 +16,10 @@
         <h1 class="pagina-titulo">Proyectos</h1>
       </div>
     </div>
+
+      {{ chart_series|json_script:"chart-series" }}
+      {{ chart_categories|json_script:"chart-categories" }}
+      <div id="chart"></div>
 
     <!-- ── Grid de proyectos ──────────────────────────────── -->
     <div class="proyectos-grid">
@@ -103,5 +108,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'dashboards/js/proyectos.js' %}"></script>
+  <script src="{% static 'dashboards/js/stacked_bar.js' %}"></script>
+  <script src="chart.js"></script>
 {% endblock %}
