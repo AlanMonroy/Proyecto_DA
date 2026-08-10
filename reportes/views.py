@@ -874,7 +874,7 @@ def reporte_costos(request):
     per_page  = int(request.GET.get('per_page', 10))
     page      = request.GET.get('page', 1)
 
-    qs = Costos.objects.all()
+    qs = Costos.objects.filter(proyecto__empresa_id = request.session.get('usuario_empresa_id')).all()
 
     if q:
         if columna == 'nombre':
@@ -936,7 +936,8 @@ def reporte_costos(request):
 
     return render(request, 'reportes/reporte_base.html', context)
 
-def get_campos_costos():
+def get_campos_costos(request):
+    empresa_id = request.session.get('usuario_empresa_id')
     return [
         {
             'nombre': 'proyecto',
@@ -945,7 +946,7 @@ def get_campos_costos():
             'campo_fk': 'proyecto',
             'requerido': True,
             'ancho': 'completo',
-            'queryset': Proyectos.objects.filter(activo=True).order_by('nombre'),
+            'queryset': Proyectos.objects.filter(activo=True, empresa_id = empresa_id).order_by('nombre'),
         },
         {
             'nombre': 'nombre', #nombre en el models
@@ -977,7 +978,7 @@ def create_costo(request):
     return form_crear(
         request,
         model=Costos,
-        campos_def=get_campos_costos(),
+        campos_def=get_campos_costos(request),
         form_titulo='Nuevo costo',
         url_lista='reporte_costos',
     )
@@ -988,7 +989,7 @@ def edit_costo(request, pk):
         request,
         model=Costos,
         pk=pk,
-        campos_def=get_campos_costos(),
+        campos_def=get_campos_costos(request),
         form_titulo='Editar costo',
         url_lista='reporte_costos',
     )

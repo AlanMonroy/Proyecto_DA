@@ -248,6 +248,8 @@
                     {% with val=objeto|get_attr:campo.nombre %}{% if val %}checked{% endif %}{% endwith %}
                 {% elif valores_post %}
                     {% if valores_post|get_dict:campo.nombre %}checked{% endif %}
+                {% else %}
+                  checked
                 {% endif %}
             />
             <span>{{ campo.label_check|default:campo.label }}</span>
