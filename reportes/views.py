@@ -284,26 +284,6 @@ def get_campos_usuario():
             'filas': 3,
         },
         {
-            'nombre': 'password1',
-            'label': 'Contraseña',
-            'tipo': 'password',
-            'requerido': True,
-            'ancho': 'medio',
-            'especial': True,
-            'solo_crear': True,
-            'placeholder': 'Mínimo 8 caracteres',
-        },
-        {
-            'nombre': 'password2',
-            'label': 'Confirmar contraseña',
-            'tipo': 'password',
-            'requerido': True,
-            'ancho': 'medio',
-            'especial': True,
-            'solo_crear': True,
-            'placeholder': 'Repite la contraseña',
-        },
-        {
             'nombre': 'rol',
             'label': 'Rol',
             'tipo': 'select',
@@ -314,6 +294,14 @@ def get_campos_usuario():
         },
     ]
 
+import secrets
+import string
+from django.core.mail import send_mail
+from django.conf import settings
+
+def generar_password(longitud=7):
+    caracteres = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(caracteres) for _ in range(longitud))
 
 @login_requerido
 def create_user(request):
@@ -328,6 +316,7 @@ def create_user(request):
                 errores['email'] = 'Email ya existe.'
         return errores
 
+    print('-----------CREAR USUARIO-----------')
     return form_crear(
         request,
         model=Usuario,
@@ -338,8 +327,23 @@ def create_user(request):
             'validar': validar,
             'defaults': {
                 'empresa_id': request.session.get('usuario_empresa_id'),
-            }
+            },
+            'post_save': post_save_usuario,
         }
+    )
+#Envio de Correo
+def post_save_usuario(obj, request):
+    password = generar_password()
+    obj.set_password(password)
+    obj.debe_cambiar_password = True  # ← campo nuevo
+    obj.save()
+
+    print('-----------EMAIL ENVIADO-----------')
+    send_mail(
+        subject='Bienvenido a Kor Suite — tus credenciales de acceso',
+        message=f'Usuario: {obj.username}\nContraseña temporal: {password}\nCambia tu contraseña al ingresar.',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[obj.email],
     )
 
 @login_requerido

@@ -178,6 +178,11 @@ def form_crear(request, model, campos_def, form_titulo, url_lista,
 
                 obj.save()  # ← obj.pk ya existe aquí
 
+                # Ejecutar post_save si existe
+                post_save = extra_context.pop('post_save', None) if extra_context else None
+                if post_save:
+                    post_save(obj, request)
+
                 # Guardar LOV (relaciones simples)
                 for campo in campos:
                     if campo.get('tipo') in ('lov', 'multiselect') and campo.get('especial'):

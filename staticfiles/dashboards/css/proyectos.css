@@ -1,0 +1,174 @@
+/* ─── Proyectos grid ─────────────────────────────────────── */
+.proyectos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* ─── Tarjeta proyecto ───────────────────────────────────── */
+.proyecto-card {
+  background: #fff;
+  border: 2px solid var(--border, #e0dbd2);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 0.22s ease, transform 0.18s ease;
+}
+
+.proyecto-card:hover {
+  box-shadow: 0 6px 20px rgba(26,26,46,0.1);
+  transform: translateY(-2px);
+}
+
+/* Barra de color superior según prioridad */
+.proyecto-card-barra {
+  height: 4px;
+  width: 100%;
+}
+
+.proyecto-card-body {
+  padding: 1.4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Nombre y estatus */
+.proyecto-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.proyecto-card-nombre {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem;
+  color: var(--ink, #1c1c1c);
+  line-height: 1.25;
+}
+
+.proyecto-card-estatus {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Stats: horas y días */
+.proyecto-card-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.proyecto-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  background: #f7f4ef;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.proyecto-stat-valor {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ink, #1c1c1c);
+  line-height: 1;
+}
+
+.proyecto-stat-label {
+  font-size: 0.72rem;
+  color: var(--ink-muted, #6b6b6b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Días faltantes — color según urgencia */
+.proyecto-stat.urgente .proyecto-stat-valor { color: #c0392b; }
+.proyecto-stat.proximo .proyecto-stat-valor { color: #a06a00; }
+.proyecto-stat.ok      .proyecto-stat-valor { color: #1a7a43; }
+.proyecto-stat.vencido .proyecto-stat-valor { color: #c0392b; }
+
+/*COLOR PRIORIDAD*/
+.prioridad-critica { background: #e74c3c; }
+.prioridad-alta   { background: #f39c12; }
+.prioridad-media  { background: #CCCC33; }
+.prioridad-baja   { background: #114DC2; }
+
+.proyecto-card-estatus {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/*COLOR ESTATUS*/
+.estatus-pendiente   { background: #fff8e6; color: #a06a00; border: 1px solid #f39c12; }
+.estatus-en-proceso  { background: #eaf3fb; color: #1a5f8a; border: 1px solid #3498db; }
+.estatus-finalizado  { background: #edfaf2; color: #1a7a43; border: 1px solid #2ecc71; }
+.estatus-cancelado   { background: #fdecea; color: #c0392b; border: 1px solid #e74c3c; }
+
+/* Barra de avance */
+.proyecto-card-avance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.proyecto-avance-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--ink-muted, #6b6b6b);
+}
+
+.proyecto-avance-barra {
+  height: 6px;
+  background: #ece8e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.proyecto-avance-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--brand-dark, #1a1a2e);
+  transition: width 0.4s ease;
+}
+
+/* Vacío */
+.proyectos-vacio {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--ink-muted, #6b6b6b);
+  font-size: 0.9rem;
+  padding: 3rem;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .proyectos-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .proyectos-grid { grid-template-columns: 1fr; }
+}
+
+#chart {
+  max-width: 650px;
+  margin: 35px auto;
+  background-color: white;
+  border-radius: 20px;
+  padding: 10px;
+}

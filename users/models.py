@@ -43,6 +43,7 @@ class Usuario(models.Model):
         on_delete=models.PROTECT,
         db_column='empresa_id',
     )
+    debe_cambiar_password = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'usuarios'  # ← apunta a tu tabla existente en Supabase
