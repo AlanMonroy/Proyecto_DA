@@ -165,10 +165,21 @@
   .proyectos-grid { grid-template-columns: 1fr; }
 }
 
-#chart {
+.charts-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;  /* ← en móvil se apilan */
+}
+
+.chart {
   max-width: 650px;
   margin: 35px auto;
   background-color: white;
   border-radius: 20px;
   padding: 10px;
+}
+
+.charts-row .chart {
+  flex: 1;
+  min-width: 300px;  /* ← mínimo antes de apilarse */
 }
