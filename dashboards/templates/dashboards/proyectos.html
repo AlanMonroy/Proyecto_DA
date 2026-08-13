@@ -17,9 +17,13 @@
       </div>
     </div>
 
-      {{ chart_series|json_script:"chart-series" }}
-      {{ chart_categories|json_script:"chart-categories" }}
-      <div id="chart"></div>
+    {{ chart_series|json_script:"chart-series" }}
+    {{ chart_categories|json_script:"chart-categories" }}
+    {{ calendar_data|json_script:"calendar-data" }}
+    <div class="charts-row">
+      <div id="stacked_bar1" class="chart"></div>
+      <div id="calendar_heatmap" class="chart"></div>
+    </div>
 
     <!-- ── Grid de proyectos ──────────────────────────────── -->
     <div class="proyectos-grid">
@@ -28,8 +32,7 @@
       {% with proyecto=r.proyecto %}
         <div class="proyecto-card"
           onclick="window.location.href='{% url 'reportes:proyectos_actividades' proyecto.pk %}'"
-          style="cursor:pointer;"
-        >
+          style="cursor:pointer;">
 
           <!-- Barra de color según prioridad -->
           <div class="proyecto-card-barra prioridad-{{ proyecto.prioridad.nombre|slugify }}"></div>
@@ -109,5 +112,5 @@
 
 {% block scripts %}
   <script src="{% static 'dashboards/js/stacked_bar.js' %}"></script>
-  <script src="chart.js"></script>
+  <script src="{% static 'dashboards/js/calendar_heatmap.js' %}"></script>
 {% endblock %}

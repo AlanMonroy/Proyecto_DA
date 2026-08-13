@@ -65,5 +65,5 @@ var options = {
   },
 }
 
-var chart = new ApexCharts(document.querySelector('#chart'), options)
+var chart = new ApexCharts(document.querySelector('#stacked_bar1'), options)
 chart.render()
