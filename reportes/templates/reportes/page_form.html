@@ -287,8 +287,9 @@
 
         <!-- LINEAS -->
         {% elif campo.tipo == 'lineas' %}
-        <div class="lineas-wrap" id="lineas-{{ campo.nombre }}">
-          <table class="lineas-tabla" id="lineas-tabla-{{ campo.nombre }}">
+        <div class="lineas-wrap" id="lineas-{{ campo.nombre }}"
+          style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+          <table class="lineas-tabla" id="lineas-tabla-{{ campo.nombre }}" style="min-width: 650px;">
             <thead>
               <tr>
                 <th>Producto</th>
